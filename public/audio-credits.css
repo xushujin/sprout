@@ -1,0 +1,30 @@
+body {
+  margin: 0;
+  padding: 24px;
+  background: #f8f9f4;
+  color: #293c30;
+  font-family: system-ui, sans-serif;
+  line-height: 1.7;
+}
+main {
+  max-width: 850px;
+  margin: auto;
+}
+a {
+  color: #336b4b;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+th,
+td {
+  text-align: left;
+  border-bottom: 1px solid #dce5d4;
+  padding: 12px 8px;
+  overflow-wrap: anywhere;
+}
+th {
+  background: #edf3e3;
+}

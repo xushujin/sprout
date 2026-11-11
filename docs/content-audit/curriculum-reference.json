@@ -1,0 +1,24 @@
+{
+  "checked_at": "2026-11-11",
+  "source": {
+    "title": "义务教育英语课程标准（2022年版）",
+    "publisher": "中华人民共和国教育部",
+    "url": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/W020220420582349487953.pdf"
+  },
+  "reference_scope": {
+    "appendix": "附录 3 词汇表",
+    "total_learning_words": 1600,
+    "staged_core_words_marked_with_asterisk": 505
+  },
+  "wordsprout_decision": {
+    "curriculum_core_target": 505,
+    "supplementary_common_words": 95,
+    "published_unique_words": 600,
+    "grade_bands": [100, 100, 100, 100, 100, 100],
+    "grade_cumulative_counts": [100, 200, 300, 400, 500, 600],
+    "difficulty_cumulative_counts": [200, 400, 600],
+    "note": "WordSprout uses the public curriculum scope and progression level as a reference. Grade placement, word order, Chinese glosses, distractors and exercises are independently authored and are not an official per-grade allocation or a textbook synchronization claim."
+  },
+  "rights_note": "The source PDF is linked for verification rather than mirrored. Individual common English words and curriculum structure are factual educational references; the app does not copy textbook passages, exercises, artwork, recordings or a publisher's sequence.",
+  "maintenance": "Recheck the public source and curriculum wording whenever the vocabulary model changes. Do not relabel the 600-word collection as an official 600-word national list."
+}

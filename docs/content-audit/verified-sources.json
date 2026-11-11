@@ -1,0 +1,206 @@
+{
+  "checked_at": "2026-11-11T02:19:40.108Z",
+  "purpose": "Free public use with source-specific license conditions; not a guarantee of no copyright worldwide.",
+  "textbooks": {
+    "previous_collections": 8,
+    "approved_collections": 0,
+    "decision": "Removed: upstream repository license does not establish textbook rightsholder authorization."
+  },
+  "retained": {
+    "general_words": 600,
+    "curriculum_core_target": 505,
+    "curriculum_reference": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/W020220420582349487953.pdf",
+    "human_recordings": 20,
+    "local_synthesized_audio": 580
+  },
+  "recordings": [
+    {
+      "word": "apple",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-apple.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229116178,
+      "source_revision_time": "2026-06-10T18:31:35Z"
+    },
+    {
+      "word": "banana",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-banana.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229118483,
+      "source_revision_time": "2026-06-10T18:36:35Z"
+    },
+    {
+      "word": "orange",
+      "source": "https://commons.wikimedia.org/wiki/File:En_-_orange.wav",
+      "license": "CC0",
+      "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "attribution_required": "false",
+      "source_revision": 1198626710,
+      "source_revision_time": "2026-04-16T21:32:58Z"
+    },
+    {
+      "word": "grape",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-grape.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229135517,
+      "source_revision_time": "2026-06-10T19:26:40Z"
+    },
+    {
+      "word": "pear",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-pear.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229151318,
+      "source_revision_time": "2026-06-10T20:08:21Z"
+    },
+    {
+      "word": "cat",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-cat.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229122106,
+      "source_revision_time": "2026-06-10T18:46:36Z"
+    },
+    {
+      "word": "dog",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-dog.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1072100029,
+      "source_revision_time": "2025-08-14T22:23:24Z"
+    },
+    {
+      "word": "rabbit",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-rabbit.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1202739864,
+      "source_revision_time": "2026-04-24T10:15:44Z"
+    },
+    {
+      "word": "bird",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-bird.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 982333727,
+      "source_revision_time": "2025-01-11T20:44:46Z"
+    },
+    {
+      "word": "fish",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-fish.ogg",
+      "license": "Public domain",
+      "license_url": null,
+      "attribution_required": "false",
+      "source_revision": 1229132901,
+      "source_revision_time": "2026-06-10T19:18:47Z"
+    },
+    {
+      "word": "sun",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-Sun.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229108481,
+      "source_revision_time": "2026-06-10T18:11:54Z"
+    },
+    {
+      "word": "moon",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-moon.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229145542,
+      "source_revision_time": "2026-06-10T19:55:07Z"
+    },
+    {
+      "word": "star",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-star.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229164640,
+      "source_revision_time": "2026-06-10T20:39:01Z"
+    },
+    {
+      "word": "tree",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-tree.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1005966265,
+      "source_revision_time": "2025-03-06T03:45:00Z"
+    },
+    {
+      "word": "flower",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-flower.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1075532073,
+      "source_revision_time": "2025-08-20T15:57:01Z"
+    },
+    {
+      "word": "book",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-book.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 876987808,
+      "source_revision_time": "2024-05-17T05:02:50Z"
+    },
+    {
+      "word": "pencil",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-pencil.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229151430,
+      "source_revision_time": "2026-06-10T20:08:36Z"
+    },
+    {
+      "word": "bag",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-bag.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229118357,
+      "source_revision_time": "2026-06-10T18:36:15Z"
+    },
+    {
+      "word": "ruler",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-ruler.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229160149,
+      "source_revision_time": "2026-06-10T20:26:38Z"
+    },
+    {
+      "word": "clock",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-clock.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229123359,
+      "source_revision_time": "2026-06-10T18:50:40Z"
+    }
+  ],
+  "synthetic_audio": {
+    "model": "en_US-ljspeech-high",
+    "repository_metadata_license": "MIT",
+    "model_card_dataset": "LJ Speech: public domain",
+    "dataset_territory_notice": "The dataset publisher states public domain in the USA; do not generalize this to every jurisdiction.",
+    "source": "https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/ljspeech/high",
+    "dataset_source": "https://keithito.com/LJ-Speech-Dataset/"
+  }
+}

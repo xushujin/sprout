@@ -1,0 +1,45 @@
+name = "wordsprout-api"
+account_id = "59d1142ec45805e0ed0a5e04c242cd84"
+main = "worker/index.ts"
+compatibility_date = "2026-11-04"
+workers_dev = false
+preview_urls = false
+
+# Static pages stay on Pages; only /api/* is handled by this Worker.
+routes = [{ pattern = "wordsprout.hatim.eu.org/api/*", zone_name = "hatim.eu.org" }]
+
+[vars]
+APP_ORIGIN = "https://wordsprout.hatim.eu.org"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "wordsprout"
+# Local development uses an isolated local database.
+database_id = "4482d261-410c-44b8-b752-8be5d2c234d0"
+
+[[kv_namespaces]]
+binding = "LEADERBOARD"
+id = "139a19c67a54451d8b93869547d0927c"
+
+[triggers]
+crons = ["*/30 * * * *"]
+
+# Native, approximate per-location rate limits; no D1/KV writes for counters.
+[[ratelimits]]
+name = "LOGIN_LIMITER"
+namespace_id = "1001"
+simple = { limit = 10, period = 60 }
+
+[[ratelimits]]
+name = "WRITE_LIMITER"
+namespace_id = "1002"
+simple = { limit = 20, period = 60 }
+
+# R2 is intentionally OFF in the zero-billing baseline. R2 overages are billable.
+# TODO: enable only after reviewing R2 billing and setting up public audio caching.
+# [[r2_buckets]]
+# binding = "AUDIO"
+# bucket_name = "wordsprout-audio"
+
+[observability]
+enabled = false

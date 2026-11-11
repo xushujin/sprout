@@ -1,0 +1,30 @@
+{
+  "replacement": "2e43c165-ecba-489a-836d-b254f55c3030",
+  "checked_at": "2026-11-11T01:00:41.345Z",
+  "results": [
+    {
+      "id": "754da528-dcfb-4b6b-88f1-ace5cc09946e",
+      "url": "https://754da528.wordsprout-5ud.pages.dev",
+      "environment": "production",
+      "created_on": "2026-11-10T06:41:31.732735Z",
+      "aliases": [],
+      "status": "removed"
+    },
+    {
+      "id": "7e6b2251-237a-4027-a6fb-17b814d65433",
+      "url": "https://7e6b2251.wordsprout-5ud.pages.dev",
+      "environment": "production",
+      "created_on": "2026-11-10T02:40:20.49275Z",
+      "aliases": [],
+      "status": "removed"
+    },
+    {
+      "id": "9c41eb04-1492-47b3-a8e8-c5c29ad4710b",
+      "url": "https://9c41eb04.wordsprout-5ud.pages.dev",
+      "environment": "production",
+      "created_on": "2026-11-10T02:19:00.047087Z",
+      "aliases": [],
+      "status": "removed"
+    }
+  ]
+}

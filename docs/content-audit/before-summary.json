@@ -1,0 +1,29 @@
+{
+  "wordEntries": 973,
+  "audioFiles": 974,
+  "retainedWords": 180,
+  "retainedAudio": 180,
+  "removedTextbooks": 8,
+  "recordingPages": [
+    "https://commons.wikimedia.org/wiki/File:En-us-apple.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-banana.ogg",
+    "https://commons.wikimedia.org/wiki/File:En_-_orange.wav",
+    "https://commons.wikimedia.org/wiki/File:En-us-grape.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-pear.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-cat.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-dog.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-rabbit.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-bird.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-fish.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-Sun.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-moon.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-star.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-tree.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-flower.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-book.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-pencil.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-bag.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-ruler.ogg",
+    "https://commons.wikimedia.org/wiki/File:En-us-clock.ogg"
+  ]
+}
