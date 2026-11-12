@@ -81,22 +81,12 @@ beforeEach(async () => {
     env.DB.prepare('DELETE FROM score_events'),
     env.DB.prepare('DELETE FROM sessions'),
     env.DB.prepare('DELETE FROM users'),
-    env.DB.prepare('INSERT INTO users VALUES (?, ?, ?, ?, ?, ?)').bind(
-      adminId,
-      'admin',
-      passwordHash,
-      '老师',
-      'admin',
-      1,
-    ),
-    env.DB.prepare('INSERT INTO users VALUES (?, ?, ?, ?, ?, ?)').bind(
-      studentId,
-      'student01',
-      passwordHash,
-      '小橘子',
-      'student',
-      1,
-    ),
+    env.DB.prepare(
+      'INSERT INTO users(id, username, password_hash, display_name, role, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+    ).bind(adminId, 'admin', passwordHash, '老师', 'admin', 1),
+    env.DB.prepare(
+      'INSERT INTO users(id, username, password_hash, display_name, role, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+    ).bind(studentId, 'student01', passwordHash, '小橘子', 'student', 1),
   ]);
   await env.LEADERBOARD.delete(`leaderboard:${schoolWeek().key}`);
 });
@@ -313,6 +303,10 @@ describe('rounds and weekly snapshots', () => {
       'SELECT COUNT(*) AS n, SUM(points_earned) AS points FROM score_events',
     ).first();
     expect(total).toEqual({ n: 1, points: 45 });
+    const account = await env.DB.prepare('SELECT lifetime_points FROM users WHERE id = ?')
+      .bind(studentId)
+      .first<{ lifetime_points: number }>();
+    expect(account?.lifetime_points).toBe(45);
     const admin = await login('admin');
     const report = (await (await request('/admin/students', undefined, admin.cookie)).json()) as {
       students: Record<string, unknown>[];
@@ -369,7 +363,10 @@ describe('rounds and weekly snapshots', () => {
     expect(response.status).toBe(200);
     const snapshot = (await response.json()) as { entries: unknown[]; week_start: string };
     expect(snapshot.week_start).toBe(week.key);
-    expect(snapshot.entries).toEqual([{ display_name: '小橘子', points: 45, rounds: 1 }]);
+    // Lifetime includes both rounds; the weekly total only includes this week's.
+    expect(snapshot.entries).toEqual([
+      { display_name: '小橘子', points: 45, rounds: 1, lifetime_points: 90 },
+    ]);
   });
 
   it('handles empty or unavailable KV without falling back to a D1 aggregation', async () => {

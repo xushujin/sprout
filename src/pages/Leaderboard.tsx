@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { Leaderboard as Snapshot } from '../../shared/types';
 import { api } from '../lib/api';
+import { growthFor } from '../lib/growth';
 import { Icon } from '../components/Icons';
+import { Sunflower } from '../components/Sunflower';
 
 export function Leaderboard() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
@@ -64,8 +66,12 @@ export function Leaderboard() {
                 <span className={`rank-number rank-${i}`}>
                   {i < 3 ? ['🥇', '🥈', '🥉'][i] : String(i + 1).padStart(2, '0')}
                 </span>
-                <span className={`rank-avatar avatar-${i % 4}`}>
-                  {['🌱', '🌻', '🍀', '🌷'][i % 4]}
+                <span className="rank-avatar">
+                  <Sunflower
+                    variant="badge"
+                    stage={growthFor(entry.lifetime_points ?? 0).index}
+                    className="sunflower-rank"
+                  />
                 </span>
                 <div className="rank-person">
                   <strong>{entry.display_name}</strong>

@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   display_name TEXT NOT NULL CHECK(length(display_name) BETWEEN 1 AND 20),
   role TEXT NOT NULL CHECK(role IN ('admin', 'student')),
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL,
+  lifetime_points INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS users_role_id ON users(role, id);
 

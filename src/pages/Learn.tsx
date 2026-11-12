@@ -16,7 +16,9 @@ import {
   type RoundWord,
 } from '../lib/progress';
 import { speak, stopAudio } from '../lib/audio';
-import { Icon, SproutArt } from '../components/Icons';
+import { growthFor } from '../lib/growth';
+import { Icon } from '../components/Icons';
+import { RoundSprout, Sunflower } from '../components/Sunflower';
 
 export function WordPicture({ word }: { word: Word }) {
   return word.image ? (
@@ -72,6 +74,7 @@ export function Learn({
   const [leaving, setLeaving] = useState(false);
   const leaveDialog = useRef<HTMLDialogElement>(null);
   const pausedAt = useRef<number | null>(null);
+  const startPoints = useRef(0);
   const current = round?.[index];
   const scopeProgress =
     scope === 'general' ? progress.words : (progress.preschoolWords?.[scope] ?? {});
@@ -88,6 +91,7 @@ export function Learn({
     }
   }
   const learned = learnedIds.size;
+  const growth = growthFor(progress.points);
 
   useEffect(() => {
     const previous = readProgress(user.id).bookId;
@@ -200,7 +204,9 @@ export function Learn({
     if (scopeWords.length < 5) return;
     gameSound.start(sounds);
     pausedAt.current = null;
-    setRound(makeRound(readProgress(user.id), scopeWords, scope));
+    const latest = readProgress(user.id);
+    startPoints.current = latest.points;
+    setRound(makeRound(latest, scopeWords, scope));
     setRoundWords(scopeWords);
     setRoundId(crypto.randomUUID());
     setIndex(0);
@@ -298,10 +304,27 @@ export function Learn({
               开始一轮学习
               <Icon name="arrow" size={20} />
             </button>
+            <div
+              className="growth-line"
+              role="group"
+              aria-label={`向日葵现在是${growth.stage.name}${
+                growth.next ? `，还差 ${growth.toNext} 分长成${growth.next.name}` : '，已经结籽'
+              }`}
+            >
+              <strong>{growth.stage.name}</strong>
+              <span className="growth-track" aria-hidden="true">
+                <span style={{ width: `${Math.round(growth.progress * 100)}%` }} />
+              </span>
+              <small>
+                {growth.next ? `还差 ${growth.toNext} 分到${growth.next.name}` : '已经结籽啦'}
+              </small>
+            </div>
             <SoundControls value={sounds} onChange={changeSound} />
             <span className="hero-caption">轻松几分钟，进步看得见</span>
           </div>
-          <SproutArt className="hero-art" />
+          <div className="hero-art">
+            <Sunflower key={growth.index} stage={growth.index} className="sunflower--grow" />
+          </div>
         </section>
         <div className="stats-grid">
           <div className="stat-card">
@@ -377,6 +400,8 @@ export function Learn({
   if (phase === 'done') {
     const correct = answers.filter(Boolean).length;
     const repaired = round.filter((word, i) => word.wasMistake && answers[i]).length;
+    const grown = growthFor(progress.points);
+    const stageUp = grown.index > growthFor(startPoints.current).index;
     return (
       <div className="result-card page-enter">
         <div className="result-medal">🌟</div>
@@ -395,6 +420,19 @@ export function Learn({
             <strong>+{correct * 10 + repaired * 5}</strong>
             <span>成长积分</span>
           </div>
+        </div>
+        <div className={`result-growth${stageUp ? ' is-new' : ''}`}>
+          <Sunflower variant="badge" stage={grown.index} className="sunflower-result" />
+          <p>
+            <strong>
+              {stageUp ? `向日葵长成了${grown.stage.name}！` : `向日葵 · ${grown.stage.name}`}
+            </strong>
+            <span>
+              {grown.next
+                ? `再攒 ${grown.toNext} 分就到${grown.next.name}`
+                : '已经结籽啦，真了不起'}
+            </span>
+          </p>
         </div>
         {repaired > 0 && (
           <p className="success-text">
@@ -551,6 +589,7 @@ export function Learn({
           </div>
           {phase === 'feedback' && (
             <div className={`feedback ${correct ? 'good' : 'retry'}`} role="status">
+              <RoundSprout answers={answers} />
               <div>
                 <strong>
                   {correct

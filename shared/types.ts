@@ -18,7 +18,13 @@ export interface ScoreEvent {
 export interface Leaderboard {
   week_start: string;
   generated_at: number | null;
-  entries: { display_name: string; points: number; rounds: number }[];
+  entries: {
+    display_name: string;
+    points: number;
+    rounds: number;
+    // Optional so snapshots written before the sunflower release still render.
+    lifetime_points?: number;
+  }[];
 }
 
 export interface Student extends User {

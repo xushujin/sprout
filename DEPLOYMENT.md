@@ -122,3 +122,30 @@
 - 对开放录音检查了解码样本峰值和有效声音；`white`、`ten` 额外限制峰值，60 个文件均无满幅样本削波或静音文件。39 个替换文件的来源、许可、哈希和测量值记录于 `docs/content-audit/preschool-audio-refresh.json`。这些自动检查不替代逐词听感和语音学评估。
 - 验证通过：9 条手机 Chromium 端到端测试、1 条手机 WebKit 音频专项测试、600 项内容检查、TypeScript、Prettier 和生产构建。正式域名禁用系统语音后，问候与数字录音播放正常，全部 600 个 MP3 解码通过且 SHA-256 与本地文件一致；验收未登录真实账号、未写生产学习数据。
 - 离线更新脚本支持限制下载频率、429 退避、逐项保存和已有录音重新转码；来源审计按最多 50 个文件分批请求。所有处理都在本机进行，生产仍直接播放 Pages 静态 MP3，使用原有每轮一次记分同步。
+
+2026-11-12 向日葵成长系统发布：
+
+- Pages 生产部署 `99df52a1` 已发布，预览地址 `https://99df52a1.wordsprout-5ud.pages.dev`，正式域名仍为 `https://wordsprout.hatim.eu.org`。本次上传 5 个变更文件，其余 606 个静态文件复用既有内容。
+- 首页新增向日葵成长插画：种子 / 发芽 / 幼苗 / 花苞 / 开花 / 盛放 / 结籽七阶段，按本机累计积分 0 / 30 / 200 / 500 / 900 / 1400 / 2000 推导；英雄卡显示当前阶段、进度条和距下一阶段分数，结算页显示阶段变化。
+- 答题反馈区新增“五题小芽”：答对一题长一片叶子，答错仍长高，五题全对开花；只反映本轮，不单独存储。
+- 成长阶段由 `src/lib/growth.ts` 从已有 `progress.points` 推导，未新增存储字段、API、Worker 路由、D1 或 KV 请求。植物仍随本机进度保存，换设备或清缓存从种子重新开始。
+- 本次只更新 Pages 静态前端；Worker 版本 `6778f951-164c-4dad-847a-011c7add20b1`、D1 schema、KV 快照、Cron、生产账号和会话均未修改。
+- 验证通过：21 条单元 / 集成测试（含 6 条成长阶段测试）、5 组平板视口布局回归、TypeScript、Prettier 和生产构建。正式域名用实际浏览器加载确认向日葵与进度条显示正常，资源指纹 `main-DWpX3W1O.js` / `main-B9V_6BO0.css` 与本地构建一致；验收使用模拟身份，未登录真实账号、未写生产学习数据。
+
+2026-11-12 星榜向日葵阶段与累计积分：
+
+- D1 `users` 新增 `lifetime_points INTEGER NOT NULL DEFAULT 0`。迁移前已导出备份 `.wrangler/d1-backup-2026-11-12.sql`；`ALTER TABLE` 后按 `score_events` 回填，6 名用户全部与事件总和一致。
+- 每轮记分改为同事务 batch：`INSERT ... ON CONFLICT DO NOTHING` + `UPDATE users SET lifetime_points = lifetime_points + ? WHERE id = ? AND changes() = 1`。`changes()` 保证重复提交不会重复累计；Worker 测试中的并发重复提交用例已验证。
+- Worker `wordsprout-api` 已重新发布。`wrangler deploy` 更新 Cron 时遇到一次网络中断，随后通过 API 确认 `*/30 * * * *` 仍然存在（`created_on` 为 2026-11-10，未变更）。
+- Pages 生产部署 `6ec0d749` 已发布，预览地址 `https://6ec0d749.wordsprout-5ud.pages.dev`，正式域名仍为 `https://wordsprout.hatim.eu.org`。星榜每行改为该学生的向日葵阶段（`variant="badge"` 的 48px 裁切头像），不再按名次轮换 emoji。
+- 手动重建本周 KV 快照 `leaderboard:2026-11-09`（TTL 8 天），包含 3 条记录及 `lifetime_points`；正式域名实际浏览器验证：果果 590 分显示花苞、hatim 385 分显示幼苗、童童 135 分显示发芽。
+- 验证通过：21 条单元 / 集成测试、TypeScript、Prettier、生产构建；正式域名 `/api/leaderboard` 返回新字段，页面无布局异常。
+
+2026-11-12 向日葵插画版发布：
+
+- Pages 生产部署 `d68bedec` 已发布，预览地址 `https://d68bedec.wordsprout-5ud.pages.dev`，正式域名仍为 `https://wordsprout.hatim.eu.org`。本次上传 19 个文件（14 张插画 + 新 JS/CSS/HTML），其余 606 个静态文件复用。
+- 七阶段从手写 SVG 改为预渲染水彩插画：`public/sunflower/stage-0.webp` 至 `stage-6.webp`（1024×1024 透明 WebP），星榜与结算页使用对应的 `stage-*-badge.webp`（256×256）。全套约 1 MB，随 Pages 静态托管，不新增 Worker、D1 或 KV 请求。
+- 插画由 WorkBuddy ImageGen 于 2026-11-12 生成，以“盛放”为统一风格与花盆参考；本机完成去底、花盆对齐、噪点清理、头像裁切和 WebP 压缩。生成与处理记录在 `docs/content-audit/sunflower-art.json`，内容核对说明已同步更新。
+- `Sunflower.tsx` 只保留阶段到文件名的映射；答题反馈的“五题小芽”仍为内联 SVG，不依赖网络图片。首页 hero 使用 1024px 整图，星榜最多 100 个 48px 头像使用 256px 裁切并懒加载。
+- 验证通过：21 条单元 / 集成测试、TypeScript、Prettier、生产构建与内容清单检查；正式域名实际浏览器确认 hero 图 1024px 加载成功，星榜三条记录的 `stage-3-badge` / `stage-2-badge` / `stage-1-badge` 均加载成功。
+- 本次只更新 Pages 静态前端与插画资源；未重新部署 Worker，D1 schema、KV 快照、Cron、账号和会话均未修改。

@@ -268,12 +268,14 @@ async function submitScore(request: Request, env: Env) {
   const score = parseScore(input);
   if (!score) return error('学习结果不符合要求。', 422, 'INVALID_SCORE');
   const now = Math.floor(Date.now() / 1000);
-  const result = await env.DB.prepare(
-    `INSERT INTO score_events
+  // changes() in the second statement is 1 only when the INSERT actually inserted,
+  // so a retried round cannot inflate the lifetime total. The batch is transactional.
+  const [inserted] = await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO score_events
       (id, user_id, words_learned, words_reviewed, correct_count, total_count, mistakes_corrected, points_earned, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(user_id, id) DO NOTHING`,
-  )
-    .bind(
+    ).bind(
       score.id,
       auth.user.id,
       score.wordsLearned,
@@ -283,9 +285,16 @@ async function submitScore(request: Request, env: Env) {
       score.mistakesCorrected,
       score.pointsEarned,
       now,
-    )
-    .run();
-  return json({ ok: true, accepted: result.meta.changes === 1, points_earned: score.pointsEarned });
+    ),
+    env.DB.prepare(
+      'UPDATE users SET lifetime_points = lifetime_points + ? WHERE id = ? AND changes() = 1',
+    ).bind(score.pointsEarned, auth.user.id),
+  ]);
+  return json({
+    ok: true,
+    accepted: inserted.meta.changes === 1,
+    points_earned: score.pointsEarned,
+  });
 }
 
 async function leaderboard(env: Env) {
@@ -421,13 +430,13 @@ async function listStudents(request: Request, env: Env) {
 export async function generateLeaderboard(env: Env, scheduledTime = Date.now()) {
   const week = schoolWeek(scheduledTime);
   const rows = await env.DB.prepare(
-    `SELECT u.display_name, COALESCE(SUM(e.points_earned), 0) AS points, COUNT(e.id) AS rounds
+    `SELECT u.display_name, u.lifetime_points, COALESCE(SUM(e.points_earned), 0) AS points, COUNT(e.id) AS rounds
     FROM score_events e JOIN users u ON u.id = e.user_id
     WHERE u.role = 'student' AND e.created_at >= ? AND e.created_at < ?
     GROUP BY u.id ORDER BY points DESC, rounds DESC, u.display_name COLLATE NOCASE ASC LIMIT 100`,
   )
     .bind(week.start, week.end)
-    .all<{ display_name: string; points: number; rounds: number }>();
+    .all<{ display_name: string; lifetime_points: number; points: number; rounds: number }>();
   const snapshot = {
     week_start: week.key,
     generated_at: Date.now(),
@@ -435,6 +444,7 @@ export async function generateLeaderboard(env: Env, scheduledTime = Date.now()) 
       display_name: row.display_name,
       points: Number(row.points),
       rounds: Number(row.rounds),
+      lifetime_points: Number(row.lifetime_points),
     })),
   };
   await env.LEADERBOARD.put(`leaderboard:${week.key}`, JSON.stringify(snapshot), {

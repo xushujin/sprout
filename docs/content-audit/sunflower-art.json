@@ -1,0 +1,72 @@
+{
+  "generated_at": "2026-11-12",
+  "tool": "WorkBuddy ImageGen",
+  "output_size": "1024x1024",
+  "shared_prompt": "Children's picture book illustration, soft gouache and watercolor texture, warm afternoon sunlight from the upper left, gentle shading, rounded friendly shapes, a single sunflower plant in the same terracotta clay pot, centered composition, plain background, no text, no watermark, no border.",
+  "stages": [
+    {
+      "index": 0,
+      "name": "种子",
+      "source": "Use_the_exact_same_watercolor__2026-11-12T08-22-29.png",
+      "asset": "/sunflower/stage-0.webp",
+      "badge": "/sunflower/stage-0-badge.webp",
+      "prompt": "Replace the plant with a single large striped sunflower seed half-buried in the dark soil. No stem, no leaves, no flower."
+    },
+    {
+      "index": 1,
+      "name": "发芽",
+      "source": "Use_the_exact_same_watercolor__2026-11-12T08-23-08.png",
+      "asset": "/sunflower/stage-1.webp",
+      "badge": "/sunflower/stage-1-badge.webp",
+      "prompt": "Replace the plant with two small rounded cotyledon leaves on a very short pale-green stem. No true leaves, no bud, no flower."
+    },
+    {
+      "index": 2,
+      "name": "幼苗",
+      "source": "Use_the_exact_same_watercolor__2026-11-12T08-23-31.png",
+      "asset": "/sunflower/stage-2.webp",
+      "badge": "/sunflower/stage-2-badge.webp",
+      "prompt": "Replace the plant with a young seedling: a slender stem about one third of the pot height with two pairs of small true leaves. No bud, no flower."
+    },
+    {
+      "index": 3,
+      "name": "花苞",
+      "source": "Use_the_exact_same_watercolor__2026-11-12T08-23-46.png",
+      "asset": "/sunflower/stage-3.webp",
+      "badge": "/sunflower/stage-3-badge.webp",
+      "prompt": "Replace the plant with a tall stem and broad leaves topped by a single closed green bud with a tiny hint of yellow. No open petals."
+    },
+    {
+      "index": 4,
+      "name": "开花",
+      "source": "Use_the_exact_same_watercolor__2026-11-12T08-25-31.png",
+      "asset": "/sunflower/stage-4.webp",
+      "badge": "/sunflower/stage-4-badge.webp",
+      "prompt": "Replace the flower with a half-open sunflower: only the outer ring of petals unfurled, the center still a tight green-yellow dome partly covered by sepals, clearly narrower and less open than the reference."
+    },
+    {
+      "index": 5,
+      "name": "盛放",
+      "source": "Children_s_picture_book_illust_2026-11-12T08-21-54.png",
+      "asset": "/sunflower/stage-5.webp",
+      "badge": "/sunflower/stage-5-badge.webp",
+      "prompt": "A fully blooming sunflower with two layers of golden-yellow pointed petals and a large domed brown seed center. This image served as the style and pot reference for the other six stages."
+    },
+    {
+      "index": 6,
+      "name": "结籽",
+      "source": "Use_the_exact_same_watercolor__2026-11-12T08-24-51.png",
+      "asset": "/sunflower/stage-6.webp",
+      "badge": "/sunflower/stage-6-badge.webp",
+      "prompt": "Transform the flower into a mature seed stage: a heavy dark seed head full of visible seeds, golden petals slightly drooping and deeper in colour, a few loose seeds falling."
+    }
+  ],
+  "processing": [
+    "Removed the generated pale checkerboard background with a low-saturation, high-value mask, then a 5px alpha opening to drop isolated specks.",
+    "Detected the terracotta pot in each image and aligned every stage to the same pot box (382px wide, bottom edge y=983 on a 1024px canvas).",
+    "Cleared the model's bottom-right watermark area and the outer 6px frame.",
+    "Exported 1024px full WebP assets and 256px badge crops at quality 92; stage 0-2 badges zoom into the pot and young plant, stage 3-6 badges frame the bud or flower."
+  ],
+  "third_party": "None. No textbook illustrations, trademarks, logos or character likenesses were supplied or reproduced.",
+  "note": "AI output is used as project artwork. The image service's account terms and any local-law questions remain with the account holder; this record is provenance, not a legal clearance."
+}
