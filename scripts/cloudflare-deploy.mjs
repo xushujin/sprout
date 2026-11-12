@@ -2,7 +2,7 @@
 // The OAuth token is captured in memory and is never logged or written here.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 
 const account = '59d1142ec45805e0ed0a5e04c242cd84';
 const domain = 'wordsprout.hatim.eu.org';
@@ -187,10 +187,18 @@ if (action === 'inspect') {
       (item) => item.word,
     );
     if (ids.length !== 600) throw new Error('Only 600 audited general words may be published.');
+    const hashes = Object.fromEntries(
+      ids.map((id) => [
+        id,
+        createHash('sha256')
+          .update(readFileSync(`public/audio/${id}.mp3`))
+          .digest('hex'),
+      ]),
+    );
     const picker = page.getByRole('region', { name: '选择学习词库' });
     await page.reload();
-    if ((await picker.getByRole('tab').count()) !== 2)
-      throw new Error('Retired textbook tab is still published.');
+    if ((await picker.getByRole('tab').count()) !== 3)
+      throw new Error('Expected grade, difficulty and preschool tabs.');
     await picker.getByRole('button', { name: '六年级' }).click();
     await page.waitForFunction(
       () => document.querySelector('.preview-card h3')?.textContent === 'apple',
@@ -223,24 +231,58 @@ if (action === 'inspect') {
         count,
       );
     }
-    const durations = await page.evaluate(async (words) => {
-      const decoder = new AudioContext();
-      try {
-        return await Promise.all(
-          [...new Set(words)].map(async (id) => {
-            const response = await fetch(`/audio/${id}.mp3`);
-            const audio = await decoder.decodeAudioData(await response.arrayBuffer());
-            return audio.duration;
-          }),
-        );
-      } finally {
-        await decoder.close();
-      }
-    }, ids);
+    for (const [theme, word] of [
+      ['英语启蒙与问候', 'hi'],
+      ['数字与数量', 'one'],
+    ]) {
+      await page.goto(`https://${domain}/`);
+      await picker.getByRole('tab', { name: '幼小衔接' }).click();
+      await picker.getByRole('button', { name: new RegExp(`^${theme}`) }).click();
+      await page.waitForFunction(
+        (expected) => document.querySelector('.preview-card h3')?.textContent === expected,
+        word,
+      );
+      await page.getByRole('button', { name: '开始一轮学习' }).click();
+      const preschoolAudio = page.waitForResponse(
+        (response) => new URL(response.url()).pathname === `/audio/${word}.mp3`,
+      );
+      await page.getByRole('button', { name: '听一听发音' }).click();
+      const response = await preschoolAudio;
+      if (!response.ok() || new URL(response.url()).searchParams.get('v') !== '3')
+        throw new Error(`幼小衔接发音或缓存版本未更新：${word}`);
+      await page.waitForFunction(
+        (expected) => window.audioPlayed.some((url) => url.includes(`/audio/${expected}.mp3`)),
+        word,
+      );
+    }
+    const durations = await page.evaluate(
+      async ({ words, hashes }) => {
+        const decoder = new AudioContext();
+        try {
+          return await Promise.all(
+            [...new Set(words)].map(async (id) => {
+              const response = await fetch(`/audio/${id}.mp3?v=3`);
+              if (!response.ok) throw new Error(`音频返回错误：${id}`);
+              const bytes = await response.arrayBuffer();
+              const digest = await crypto.subtle.digest('SHA-256', bytes);
+              const hash = [...new Uint8Array(digest)]
+                .map((byte) => byte.toString(16).padStart(2, '0'))
+                .join('');
+              if (hash !== hashes[id]) throw new Error(`线上音频与本地文件不一致：${id}`);
+              const audio = await decoder.decodeAudioData(bytes);
+              return audio.duration;
+            }),
+          );
+        } finally {
+          await decoder.close();
+        }
+      },
+      { words: ids, hashes },
+    );
     if (durations.length !== new Set(ids).size || durations.some((value) => value < 0.2))
       throw new Error('音频解码检查失败。');
     console.log(
-      `正式域名验证通过：仅通用年级/难度词库、选择持久化、禁用系统朗读后 ${durations.length}/600 个音频成功解码。未写入生产学习数据。`,
+      `正式域名验证通过：年级/难度/幼小衔接入口、选择持久化、禁用系统朗读后 ${durations.length}/600 个音频成功解码且 SHA-256 与本地文件一致。未写入生产学习数据。`,
     );
   } finally {
     await browser.close();

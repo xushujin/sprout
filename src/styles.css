@@ -1873,7 +1873,7 @@ td small {
 }
 .book-tabs {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 5px;
   background: #f0f3e7;
   border-radius: 12px;
@@ -1901,6 +1901,7 @@ td small {
 }
 .grade-options button,
 .level-options button,
+.preschool-theme-options button,
 .term-options button {
   border: 1px solid #e3e9d9;
   border-radius: 11px;
@@ -1910,19 +1911,22 @@ td small {
   min-height: 44px;
 }
 .grade-options strong,
-.level-options strong {
+.level-options strong,
+.preschool-theme-options strong {
   display: block;
   font-size: 13px;
   font-weight: 600;
 }
 .grade-options span,
-.level-options button > span:last-child {
+.level-options button > span:last-child,
+.preschool-theme-copy > span {
   display: block;
   font-size: 10px;
   margin-top: 4px;
 }
 .grade-options button.selected,
 .level-options button.selected,
+.preschool-theme-options button.selected,
 .term-options button.selected {
   border-color: #80a46b;
   background: #edf4e3;
@@ -1938,6 +1942,74 @@ td small {
   display: block;
   font-size: 24px;
   margin-bottom: 6px;
+}
+.preschool-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 15px;
+  border: 1px solid #e3ebd3;
+  border-radius: 12px;
+  background: linear-gradient(115deg, #f3f8e7, #fffaf0);
+  color: #6e8559;
+  font-size: 11px;
+}
+.preschool-intro > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.preschool-intro strong {
+  color: #496c3b;
+  font-size: 13px;
+}
+.preschool-intro > span {
+  flex-shrink: 0;
+  font-size: 27px;
+}
+.preschool-theme-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 13px;
+}
+.preschool-theme-options button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  text-align: left;
+  color: #6f8263;
+  min-height: 72px;
+}
+.preschool-theme-emoji {
+  flex-shrink: 0;
+  font-size: 25px;
+}
+.preschool-theme-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+.preschool-theme-copy > span {
+  line-height: 1.5;
+}
+.preschool-theme-count {
+  flex-shrink: 0;
+  align-self: flex-start;
+  border-radius: 10px;
+  background: #edf2e0;
+  padding: 3px 6px;
+  font-size: 10px;
+  color: #6b8657;
+  white-space: nowrap;
+}
+.preschool-theme-options button.selected .preschool-theme-count {
+  background: #deebd0;
+  color: #466834;
 }
 .book-note {
   font-size: 11px;
@@ -2075,6 +2147,16 @@ td small {
   }
   .level-options {
     gap: 7px;
+  }
+  .preschool-intro {
+    padding: 11px;
+  }
+  .preschool-theme-options {
+    grid-template-columns: 1fr;
+  }
+  .preschool-theme-options button {
+    min-height: 65px;
+    padding: 10px;
   }
   .level-options button {
     padding: 12px 7px;
@@ -2318,8 +2400,20 @@ td small {
     gap: 10px;
   }
   .grade-options button,
-  .level-options button {
+  .level-options button,
+  .preschool-theme-options button {
     padding: 15px 10px;
+  }
+  .preschool-intro,
+  .preschool-theme-copy > span {
+    font-size: 12px;
+  }
+  .preschool-theme-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .preschool-theme-options strong {
+    font-size: 15px;
   }
   .grade-options strong,
   .level-options strong,

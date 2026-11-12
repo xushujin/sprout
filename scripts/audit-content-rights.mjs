@@ -6,17 +6,6 @@ const directory = 'docs/content-audit';
 mkdirSync(directory, { recursive: true });
 const manifest = JSON.parse(readFileSync('public/audio/sources.json', 'utf8'));
 const recordings = manifest.filter((item) => item.kind !== 'synthesized');
-const query = new URL('https://commons.wikimedia.org/w/api.php');
-query.search = new URLSearchParams({
-  action: 'query',
-  format: 'json',
-  prop: 'imageinfo|revisions',
-  iiprop: 'url|extmetadata',
-  rvprop: 'ids|timestamp',
-  titles: recordings
-    .map((item) => decodeURIComponent(new URL(item.source).pathname.slice('/wiki/'.length)))
-    .join('|'),
-});
 function fetchPublic(url, file) {
   execFileSync(
     'curl',
@@ -37,8 +26,31 @@ function fetchPublic(url, file) {
   );
 }
 const raw = `${directory}/commons-source-metadata.json`;
-fetchPublic(query.toString(), raw);
-const pages = Object.values(JSON.parse(readFileSync(raw, 'utf8')).query.pages);
+const combined = { batchcomplete: '', query: { pages: {} } };
+mkdirSync('.wrangler/tmp', { recursive: true });
+// The public MediaWiki API accepts at most 50 titles per ordinary request.
+for (let offset = 0; offset < recordings.length; offset += 50) {
+  const query = new URL('https://commons.wikimedia.org/w/api.php');
+  query.search = new URLSearchParams({
+    action: 'query',
+    format: 'json',
+    prop: 'imageinfo|revisions',
+    iiprop: 'url|extmetadata',
+    rvprop: 'ids|timestamp',
+    titles: recordings
+      .slice(offset, offset + 50)
+      .map((item) => decodeURIComponent(new URL(item.source).pathname.slice('/wiki/'.length)))
+      .join('|'),
+  });
+  const batchFile = `.wrangler/tmp/commons-audit-${offset}.json`;
+  fetchPublic(query.toString(), batchFile);
+  const batch = JSON.parse(readFileSync(batchFile, 'utf8'));
+  if (batch.error || batch.warnings || !batch.query?.pages)
+    throw new Error(`Commons audit failed: ${JSON.stringify(batch.error ?? batch.warnings)}`);
+  Object.assign(combined.query.pages, batch.query.pages);
+}
+writeFileSync(raw, JSON.stringify(combined) + '\n');
+const pages = Object.values(combined.query.pages);
 const observations = recordings.map((item) => {
   const title = decodeURIComponent(new URL(item.source).pathname.slice('/wiki/'.length));
   const page = pages.find(

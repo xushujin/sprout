@@ -25,7 +25,8 @@ flowchart LR
 - 学生默认勾选“记住我”：Cookie 和服务端会话有效期 30 天；未勾选时 Cookie 无 `Max-Age/Expires`，服务端最长 12 小时。管理员最长 2 小时，不允许 30 天登录。
 - 页面启动先调用 `/api/me`；有效会话直接进入学习页。只保存上次用户名用于预填，**不保存密码、密码派生凭据、token 或登录身份**。学习进度另以用户 ID 隔离。
 - 词库以教育部公开的《义务教育英语课程标准（2022年版）》附录 3 中 505 个二级词汇为范围和能力参照，由 WordSprout 自主分级并补充 95 个主题拓展词，共 600 个不重复常用词。1–6 年级各新增 100 词、累计 100 / 200 / 300 / 400 / 500 / 600 词；难度为累计词库：入门 200 词、基础累计 400 词、进阶累计 600 词。官方课标没有与本应用完全相同的逐年级公开分配，因此页面不宣称教材同步或官方分级。600 个词均有静态 MP3，不提供未经再分发授权核验的第三方教材内容。
-- 每轮从所选词库取 5 项，错词优先；每题 15 秒选意思，具象词提供 emoji / 图片辅助，抽象词和短语使用文字选项。答对 10 分，补错成功额外 5 分。切换词库保留逐词进度，同词不会重新算作新词；未完成轮次不切换词库。
+- 首页另有 WordSprout 自主编排的“幼小衔接”路线：英语启蒙与问候、颜色与大小、数字与数量、课堂与书包、我的身边共 5 个主题，每主题 10 项。题目复用已核验的 600 词和静态 MP3，不复制外部教材内容，也不增加音频、Worker、D1 或 KV 资源。主题内每轮 5 项、15 秒听音选意思，进度和补错池按主题保存在本机；完成后仍只批量提交一次积分事件。
+- 年级与难度词库之间共享逐词进度；幼小衔接按主题单独记录，以免不同场景下的学习记录互相覆盖。每轮错词优先；答对 10 分，补错成功额外 5 分；未完成轮次不切换词库。
 - 点击开始后播放浏览器本地生成的节奏背景音乐，最后 5 秒加速；答对为上行提示音，答错 / 超时为下行提示音，整轮完成有收获音效。音乐与音效可分别关闭，设置保存在当前账号的本地进度中；单词 MP3 仍可独立播放，发音时背景自动降低音量。
 - 学习页和结果页都有“返回首页”。未完成轮次需要确认，弹窗期间暂停倒计时与声音；确认返回会丢弃本轮，已完成的积分和待同步队列保留。页面进入后台时暂停声音和计时，回到学习页后继续；卸载或返回首页时取消全部声音调度。无需额外音频请求或 Cloudflare 配额。
 - 完成整轮才保存本地记录与 outbox，再 POST 一次。服务端验证计数和积分公式，使用 `(user_id, id)` 唯一键去重，不接受客户端指定记分账号。
@@ -44,14 +45,15 @@ src/
   data/words.ts              # 首批 20 个基础词与稳定 ID
   data/curriculum-words.ts   # 600 词、课标参考与累计分级
   data/general-words.ts      # 对外导出课程词库
-  data/catalog.ts            # 通用年级 / 难度；旧选择兼容迁移
+  data/preschool.ts          # 幼小衔接主题与经审核词库映射
+  data/catalog.ts            # 年级 / 难度 / 幼小衔接主题；旧选择兼容迁移
   lib/api.ts                 # Cookie 请求、超时与错误处理
   lib/progress.ts            # 本地进度、补错池、outbox
   lib/sync.ts                # 整轮同步、退避、去重与账号归属
   lib/audio.ts               # 直接播放 Pages MP3，可选 CDN / 系统语音降级
   lib/game-sound.ts          # 本地 Web Audio 背景音乐、答题音效、发音避让
   components/Icons.tsx       # SVG 图标与小芽插图
-  components/BookPicker.tsx  # 选择通用年级 / 难度
+  components/BookPicker.tsx  # 选择年级 / 难度 / 幼小衔接主题
   components/SoundControls.tsx # 音乐 / 音效开关
   styles.css                 # 手机 / 桌面布局
 worker/
@@ -69,7 +71,7 @@ scripts/
   seed-e2e.mjs               # 只用于隔离的本地测试数据库
 tests/                       # Worker 集成测试与浏览器测试
 public/_headers              # Pages 安全头与静态资源缓存
-public/audio/                # 600 个 MP3（20 开放许可录音 + 580 本机合成）
+public/audio/                # 600 个 MP3（60 开放许可录音 + 540 本机合成）
 public/audio-credits.html    # 对外可访问的音频署名页
 public/vocabulary/credits.html # 保留内容与使用条件说明
 public/404.html              # 已移除内容不再返回 SPA 或词表
@@ -291,9 +293,10 @@ PLAYWRIGHT_BROWSER=webkit npm run test:layout
 
 ## 可替换位置与 TODO
 
-- **通用词库 / 图片**：编辑 `src/data/curriculum-words.ts`，保留稳定 `id`；首批基础词的图片与音标可在 `src/data/words.ts` 补充，也可用 `public/words/` 静态图片填 `image`。505 个二级词汇只是范围参照，年级和难度是 WordSprout 的自主学习建议，不代表官方逐年级分配或出版社教材同步。
+- **通用词库 / 图片**：编辑 `src/data/curriculum-words.ts`，保留稳定 `id`；幼小衔接主题在 `src/data/preschool.ts` 中按 ID 选择这些已审核词条，新增主题必须继续只引用经核验词库。首批基础词的图片与音标可在 `src/data/words.ts` 补充，也可用 `public/words/` 静态图片填 `image`。505 个二级词汇只是范围参照，年级和难度是 WordSprout 的自主学习建议，不代表官方逐年级分配或出版社教材同步。
 - **第三方教材**：当前没有通过再分发授权核验的教材词库，外研版入口、8 册处理数据、原始数据和导入脚本已移除。原 `fltrp-*` 选择会迁移为相应通用年级，旧学习统计和未同步结果保留。不应以“GitHub 上能下载”或“仓库带 GPL”代替第三方教材的授权证明。
-- **静态 MP3**：保留 600 项。20 个真人录音中 18 项是 CC BY-SA 3.0、1 项 CC0、1 项公有领域；都保留作者、来源、许可和处理说明。CC BY-SA 素材有版权，但允许按条件免费使用，不能称作“没有版权”。580 个合成发音来自本机 Piper / LJSpeech 模型，仓库 MIT 与具体模型卡、美国公有领域数据声明的核对记录见 `docs/content-audit/`；不扩张为全球所有权利均已清除的保证。
+- **静态 MP3**：保留 600 项。60 个开放许可录音中 54 项是 CC BY-SA 3.0、1 项 CC0、5 项公有领域；都保留作者、来源、许可和处理说明。CC BY-SA 素材有版权，但允许按条件免费使用，不能称作“没有版权”。540 个合成发音来自本机 Piper / LJSpeech 模型，仓库 MIT 与具体模型卡、美国公有领域数据声明的核对记录见 `docs/content-audit/`；不扩张为全球所有权利均已清除的保证。
+- **幼小衔接发音优化**：50 个主题词中 48 个已采用开放录音，`black`、`pink` 保留合成音频。本机可运行 `node scripts/refresh-preschool-audio.mjs` 增量更新，或传入指定主题词 ID 重新转码（如 `node scripts/refresh-preschool-audio.mjs white ten`）。脚本会限制下载频率、保存每项完成结果，并在替换前检查 MP3 时长和峰值；随后运行 `node scripts/update-audio-credits.mjs`、`node scripts/audit-content-rights.mjs` 更新署名和来源核对。音频替换后须同步提升 `src/lib/audio.ts` 中的缓存版本。
 - 本机生成流程：`node scripts/build-vocabulary.mjs` → 安装 `piper-tts` 后运行 `scripts/generate-vocabulary-audio.py --model <本机模型路径>` → `node scripts/update-audio-credits.mjs` → `npm run check:vocabulary`。该流程只接受通用词库，不再导入第三方教材。构建前后都会校验公共数据和 MP3 的允许清单，阻止旧素材重新进入发布包。
 - `node scripts/audit-content-rights.mjs` 联网重新核对保留录音及模型的来源元数据，发现许可不同或缺失即报错。上线前仍需人工阅读具体许可条件，不能仅凭自动检测认定全部法律权利。
 - **暂未实现**：云端逐词进度合并、PWA 离线冷启动、未完成轮次恢复、进度导出 / 归档和严格防作弊。新增第三方内容必须先有明确来源和使用授权。

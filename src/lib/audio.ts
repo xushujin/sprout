@@ -25,7 +25,8 @@ export async function speak(word: Word): Promise<boolean> {
   currentAudio.preload = 'auto';
   currentAudio.onended = ended;
   currentAudio.onerror = ended;
-  currentAudio.src = `${base}/${encodeURIComponent(word.audioId ?? word.id)}.mp3?v=1`;
+  // Bump this when a shipped MP3 is replaced so mobile browsers do not keep an old cached file.
+  currentAudio.src = `${base}/${encodeURIComponent(word.audioId ?? word.id)}.mp3?v=3`;
   let timer: number | undefined;
   try {
     await Promise.race([

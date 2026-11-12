@@ -1,10 +1,12 @@
 import { BOOKS, GRADE_LABELS, type Book, type BookMode } from '../data/catalog';
 import { CURRICULUM_CORE_TARGET, GENERAL_WORD_TARGET } from '../data/general-words';
+import { PRESCHOOL_THEMES } from '../data/preschool';
 import { Icon } from './Icons';
 
 const tabs: { mode: BookMode; title: string }[] = [
   { mode: 'grade', title: '按年级' },
   { mode: 'level', title: '按难度' },
+  { mode: 'preschool', title: '幼小衔接' },
 ];
 export function BookPicker({
   selected,
@@ -73,6 +75,43 @@ export function BookPicker({
               以课标二级词汇范围（{CURRICULUM_CORE_TARGET} 词）为参照，并补充{' '}
               {GENERAL_WORD_TARGET - CURRICULUM_CORE_TARGET}{' '}
               个主题拓展词。各年级为累计学习，具体分级是本站自主建议。
+            </p>
+          </>
+        )}
+        {selected.mode === 'preschool' && (
+          <>
+            <div className="preschool-intro">
+              <div>
+                <strong>先听声音，再认一认</strong>
+                <span>每个小主题 10 个词 · 每轮 5 个 · 适合刚接触英语的孩子</span>
+              </div>
+              <span aria-hidden="true">🌱</span>
+            </div>
+            <div className="preschool-theme-options">
+              {BOOKS.filter((book) => book.mode === 'preschool').map((book) => {
+                const theme = PRESCHOOL_THEMES.find((item) => item.id === book.theme)!;
+                return (
+                  <button
+                    key={book.id}
+                    className={selected.id === book.id ? 'selected' : ''}
+                    aria-pressed={selected.id === book.id}
+                    onClick={() => onChange(book.id)}
+                  >
+                    <span className="preschool-theme-emoji" aria-hidden="true">
+                      {theme.emoji}
+                    </span>
+                    <span className="preschool-theme-copy">
+                      <strong>{theme.name}</strong>
+                      <span>{theme.description}</span>
+                    </span>
+                    <span className="preschool-theme-count">{book.count} 词</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="book-note">
+              幼小衔接是 WordSprout
+              自主编排的启蒙路线，选词来自当前词库，按生活主题循序渐进；不对应特定教材，也不宣称官方课程分级。可先整轮听音认意思，再逐步脱离提示。
             </p>
           </>
         )}

@@ -1,7 +1,8 @@
 import type { Word } from './words';
 import { GENERAL_GRADES, GENERAL_WORDS_BY_GRADE, GRADE_BANDS } from './general-words';
+import { PRESCHOOL_THEMES, PRESCHOOL_THEMES_BY_ID, preschoolWords } from './preschool';
 
-export type BookMode = 'grade' | 'level';
+export type BookMode = 'grade' | 'level' | 'preschool';
 export interface Book {
   id: string;
   name: string;
@@ -10,6 +11,7 @@ export interface Book {
   added: number;
   grade?: number;
   description: string;
+  theme?: string;
 }
 export const GRADE_LABELS = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级'];
 const levels = [
@@ -37,6 +39,15 @@ export const BOOKS: Book[] = [
     added: GRADE_BANDS[grade].length,
     description: '累计学习，按课标范围自主分级',
   })),
+  ...PRESCHOOL_THEMES.map((theme) => ({
+    id: `preschool-${theme.id}`,
+    name: `幼小衔接 · ${theme.name}`,
+    mode: 'preschool' as const,
+    theme: theme.id,
+    count: theme.wordIds.length,
+    added: theme.wordIds.length,
+    description: theme.description,
+  })),
   ...levels.map((level) => ({
     id: `level-${level.id}`,
     name: `${level.name}词库`,
@@ -61,5 +72,7 @@ export async function loadBookWords(book: Book, _signal?: AbortSignal): Promise<
     return levels
       .find((level) => `level-${level.id}` === book.id)!
       .grades.flatMap((grade) => GRADE_BANDS[grade]);
+  if (book.mode === 'preschool' && PRESCHOOL_THEMES_BY_ID.has(book.theme!))
+    return preschoolWords(book.theme!);
   throw new Error('该词库已不可用，请选择通用练习。');
 }

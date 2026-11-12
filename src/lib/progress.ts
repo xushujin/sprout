@@ -12,6 +12,9 @@ export interface Progress {
   bookId?: string;
   sound?: { music: boolean; effects: boolean };
   words: Record<string, WordProgress>;
+  // Preschool topics intentionally combine general vocabulary in different contexts.
+  // Keep their mistakes separate from general-round progress; IDs remain stable per topic.
+  preschoolWords?: Record<string, Record<string, WordProgress>>;
   pending: ScoreEvent[];
   rounds: number;
   points: number;
@@ -79,19 +82,24 @@ async function locked<T>(userId: string, callback: () => T | Promise<T>): Promis
   return callback();
 }
 
-export function makeRound(progress: Progress, words: Word[] = WORDS): RoundWord[] {
+export function makeRound(
+  progress: Progress,
+  words: Word[] = WORDS,
+  scope = 'general',
+): RoundWord[] {
+  const states = scope === 'general' ? progress.words : (progress.preschoolWords?.[scope] ?? {});
   return [...words]
     .sort((a, b) => {
-      const pa = progress.words[a.id],
-        pb = progress.words[b.id];
+      const pa = states[a.id],
+        pb = states[b.id];
       const priority = (p?: WordProgress) => (p?.needsReview ? 0 : !p?.seen ? 1 : 2);
       return priority(pa) - priority(pb) || (pa?.lastSeen ?? 0) - (pb?.lastSeen ?? 0);
     })
     .slice(0, 5)
     .map((word) => ({
       word,
-      isNew: !progress.words[word.id]?.seen,
-      wasMistake: !!progress.words[word.id]?.needsReview,
+      isNew: !states[word.id]?.seen,
+      wasMistake: !!states[word.id]?.needsReview,
     }));
 }
 
@@ -130,6 +138,7 @@ export async function completeRound(
   id: string,
   round: RoundWord[],
   answers: boolean[],
+  scope = 'general',
 ) {
   return locked(userId, () => {
     const progress = readProgress(userId);
@@ -147,15 +156,17 @@ export async function completeRound(
       mistakes_corrected: repaired,
       points_earned: correct * 10 + repaired * 5,
     };
+    const states = scope === 'general' ? progress.words : (progress.preschoolWords?.[scope] ?? {});
     for (const [i, item] of round.entries()) {
-      const old = progress.words[item.word.id];
-      progress.words[item.word.id] = {
+      const old = states[item.word.id];
+      states[item.word.id] = {
         seen: (old?.seen ?? 0) + 1,
         correct: (old?.correct ?? 0) + Number(answers[i]),
         needsReview: !answers[i],
         lastSeen: Date.now(),
       };
     }
+    if (scope !== 'general') (progress.preschoolWords ??= {})[scope] = states;
     progress.rounds += 1;
     progress.points += event.points_earned;
     progress.correct += correct;

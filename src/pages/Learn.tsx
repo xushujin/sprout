@@ -45,6 +45,7 @@ export function Learn({
 }) {
   const [bookId, setBookId] = useState(() => findBook(progress.bookId).id);
   const book = findBook(bookId);
+  const scope = book.mode === 'preschool' ? book.id : 'general';
   const [loadedBook, setLoadedBook] = useState<{ id: string; words: Word[] } | null>(null);
   const [bookError, setBookError] = useState('');
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -72,9 +73,21 @@ export function Learn({
   const leaveDialog = useRef<HTMLDialogElement>(null);
   const pausedAt = useRef<number | null>(null);
   const current = round?.[index];
-  const mistakes = scopeWords.filter((word) => progress.words[word.id]?.needsReview).length;
-  const bookLearned = scopeWords.filter((word) => progress.words[word.id]?.seen).length;
-  const learned = Object.values(progress.words).filter((w) => w.seen).length;
+  const scopeProgress =
+    scope === 'general' ? progress.words : (progress.preschoolWords?.[scope] ?? {});
+  const mistakes = scopeWords.filter((word) => scopeProgress[word.id]?.needsReview).length;
+  const bookLearned = scopeWords.filter((word) => scopeProgress[word.id]?.seen).length;
+  const learnedIds = new Set(
+    Object.entries(progress.words)
+      .filter(([, state]) => state.seen)
+      .map(([id]) => id),
+  );
+  for (const words of Object.values(progress.preschoolWords ?? {})) {
+    for (const [id, state] of Object.entries(words)) {
+      if (state.seen) learnedIds.add(id);
+    }
+  }
+  const learned = learnedIds.size;
 
   useEffect(() => {
     const previous = readProgress(user.id).bookId;
@@ -187,7 +200,7 @@ export function Learn({
     if (scopeWords.length < 5) return;
     gameSound.start(sounds);
     pausedAt.current = null;
-    setRound(makeRound(readProgress(user.id), scopeWords));
+    setRound(makeRound(readProgress(user.id), scopeWords, scope));
     setRoundWords(scopeWords);
     setRoundId(crypto.randomUUID());
     setIndex(0);
@@ -235,7 +248,7 @@ export function Learn({
     saving.current = true;
     setBusy(true);
     try {
-      await completeRound(user.id, roundId, round, answers);
+      await completeRound(user.id, roundId, round, answers, scope);
       stopAudio();
       gameSound.finish();
       setPhase('done');
@@ -331,11 +344,13 @@ export function Learn({
         <div className="section-heading">
           <h2>下一轮的小伙伴</h2>
           <span>
-            {scopeWords.length ? `只从当前词库选词 · ${book.count} 项` : '词库加载后展示'}
+            {scopeWords.length
+              ? `${book.mode === 'preschool' ? '先听音再认意思' : '只从当前词库选词'} · ${book.count} 项`
+              : '词库加载后展示'}
           </span>
         </div>
         <div className="preview-grid">
-          {makeRound(progress, scopeWords).map(({ word, wasMistake }, i) => (
+          {makeRound(progress, scopeWords, scope).map(({ word, wasMistake }, i) => (
             <div className={`preview-card tone-${i}`} key={word.id}>
               <span className="preview-number">0{i + 1}</span>
               <WordPicture word={word} />
@@ -352,7 +367,9 @@ export function Learn({
           </p>
         </div>
         <p className="local-note">
-          课标参考词库为自主分级 · 成长记录保存在这台设备 · 完成一轮后同步积分
+          {book.mode === 'preschool'
+            ? '幼小衔接为自主启蒙路线 · 成长记录保存在这台设备 · 完成一轮后同步积分'
+            : '课标参考词库为自主分级 · 成长记录保存在这台设备 · 完成一轮后同步积分'}
         </p>
       </div>
     );

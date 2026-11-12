@@ -17,8 +17,8 @@
 
 ## 保留音频
 
-- 20 个真人录音：逐一查询 Wikimedia Commons 的文件元数据，对照当前清单。18 个 CC BY-SA 3.0、1 个 CC0、1 个公有领域标记匹配。保留署名、原页面、许可链接和转码/音量处理说明；CC BY-SA 仍有版权，改编须遵守相同许可等条件。
-- 580 个本机合成音频：使用 Piper / en_US-ljspeech-high。模型仓库 README 标注 MIT；该模型 MODEL_CARD 标注训练数据 LJ Speech 为 public domain；数据集发布者把公有领域声明限定于美国。保留这些来源事实，不自行将生成 MP3 宣告成全球公有领域。
+- 60 个开放许可录音：逐一查询 Wikimedia Commons 的文件元数据，对照当前清单。54 个 CC BY-SA 3.0、1 个 CC0、5 个公有领域标记匹配。保留署名、原页面、许可链接和转码/音量处理说明；CC BY-SA 仍有版权，改编须遵守相同许可等条件。
+- 540 个本机合成音频：使用 Piper / en_US-ljspeech-high。模型仓库 README 标注 MIT；该模型 MODEL_CARD 标注训练数据 LJ Speech 为 public domain；数据集发布者把公有领域声明限定于美国。保留这些来源事实，不自行将生成 MP3 宣告成全球公有领域。
 - Piper 工具、模型权重未部署到网站；GPL 工具的输出不会仅因工具 GPL 而自动受 GPL，输出是否包含受保护内容仍需单独分析。
 - 没有复制教材附带录音、出版物插图或商业歌曲。背景音乐、提示音及 SVG 插图由本项目代码生成；emoji 由设备字形渲染。
 
@@ -41,3 +41,5 @@
 - https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/ljspeech/high/MODEL_CARD
 - https://keithito.com/LJ-Speech-Dataset/
 - https://www.gnu.org/licenses/gpl-faq.html#WhatCaseIsOutputGPL
+
+2026-11-12 第二波发音优化：新增替换 39 个幼小衔接词的合成音频，幼小衔接现有 48/50 个词使用开放录音；`black`、`pink` 保留合成。`white`、`ten` 额外限制峰值，避免转码后的尖峰削波。音频来源仍逐项记录在清单中，署名页的许可数量从清单自动生成。

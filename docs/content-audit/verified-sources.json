@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-11-11T02:19:40.108Z",
+  "checked_at": "2026-11-12T01:33:28.324Z",
   "purpose": "Free public use with source-specific license conditions; not a guarantee of no copyright worldwide.",
   "textbooks": {
     "previous_collections": 8,
@@ -10,8 +10,8 @@
     "general_words": 600,
     "curriculum_core_target": 505,
     "curriculum_reference": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/W020220420582349487953.pdf",
-    "human_recordings": 20,
-    "local_synthesized_audio": 580
+    "human_recordings": 60,
+    "local_synthesized_audio": 540
   },
   "recordings": [
     {
@@ -193,6 +193,366 @@
       "attribution_required": "true",
       "source_revision": 1229123359,
       "source_revision_time": "2026-06-10T18:50:40Z"
+    },
+    {
+      "word": "hello",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-hello.ogg",
+      "license": "Public domain",
+      "license_url": null,
+      "attribution_required": "false",
+      "source_revision": 1229136883,
+      "source_revision_time": "2026-06-10T19:30:55Z"
+    },
+    {
+      "word": "red",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-red.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229158114,
+      "source_revision_time": "2026-06-10T20:21:08Z"
+    },
+    {
+      "word": "blue",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-blue.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229120239,
+      "source_revision_time": "2026-06-10T18:40:38Z"
+    },
+    {
+      "word": "yellow",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-yellow.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229174085,
+      "source_revision_time": "2026-06-10T21:04:10Z"
+    },
+    {
+      "word": "green",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-green.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229135679,
+      "source_revision_time": "2026-06-10T19:27:08Z"
+    },
+    {
+      "word": "white",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-white.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229172877,
+      "source_revision_time": "2026-06-10T21:01:08Z"
+    },
+    {
+      "word": "brown",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-brown.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229121216,
+      "source_revision_time": "2026-06-10T18:43:21Z"
+    },
+    {
+      "word": "one",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-one.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229149533,
+      "source_revision_time": "2026-06-10T20:03:45Z"
+    },
+    {
+      "word": "two",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-two.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1146958533,
+      "source_revision_time": "2026-01-13T01:38:11Z"
+    },
+    {
+      "word": "three",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-three.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229167849,
+      "source_revision_time": "2026-06-10T20:48:16Z"
+    },
+    {
+      "word": "four",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-four.ogg",
+      "license": "Public domain",
+      "license_url": null,
+      "attribution_required": "false",
+      "source_revision": 1229133718,
+      "source_revision_time": "2026-06-10T19:21:37Z"
+    },
+    {
+      "word": "five",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-five.ogg",
+      "license": "Public domain",
+      "license_url": null,
+      "attribution_required": "false",
+      "source_revision": 926832163,
+      "source_revision_time": "2024-09-21T03:24:41Z"
+    },
+    {
+      "word": "six",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-six.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229162703,
+      "source_revision_time": "2026-06-10T20:33:44Z"
+    },
+    {
+      "word": "seven",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-seven.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229161791,
+      "source_revision_time": "2026-06-10T20:31:10Z"
+    },
+    {
+      "word": "eight",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-eight.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229129690,
+      "source_revision_time": "2026-06-10T19:09:34Z"
+    },
+    {
+      "word": "nine",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-nine.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 971568232,
+      "source_revision_time": "2024-12-17T19:46:42Z"
+    },
+    {
+      "word": "ten",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-ten.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229167203,
+      "source_revision_time": "2026-06-10T20:46:23Z"
+    },
+    {
+      "word": "mother",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-mother.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229145716,
+      "source_revision_time": "2026-06-10T19:55:29Z"
+    },
+    {
+      "word": "father",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-father.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229132203,
+      "source_revision_time": "2026-06-10T19:16:48Z"
+    },
+    {
+      "word": "family",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-family.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229132070,
+      "source_revision_time": "2026-06-10T19:16:19Z"
+    },
+    {
+      "word": "baby",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-baby.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229118189,
+      "source_revision_time": "2026-06-10T18:35:49Z"
+    },
+    {
+      "word": "water",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-water.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1136032572,
+      "source_revision_time": "2025-12-24T15:43:17Z"
+    },
+    {
+      "word": "big",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-big.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1177609806,
+      "source_revision_time": "2026-03-08T04:57:12Z"
+    },
+    {
+      "word": "small",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-small.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1084982749,
+      "source_revision_time": "2025-09-13T08:52:41Z"
+    },
+    {
+      "word": "good",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-good.ogg",
+      "license": "Public domain",
+      "license_url": null,
+      "attribution_required": "false",
+      "source_revision": 963828927,
+      "source_revision_time": "2024-11-30T19:46:53Z"
+    },
+    {
+      "word": "ball",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-ball.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229118433,
+      "source_revision_time": "2026-06-10T18:36:27Z"
+    },
+    {
+      "word": "hi",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-hi.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1119644341,
+      "source_revision_time": "2025-11-22T01:49:35Z"
+    },
+    {
+      "word": "bye",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-bye.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1115177791,
+      "source_revision_time": "2025-11-14T04:59:58Z"
+    },
+    {
+      "word": "thanks",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-thanks.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229167377,
+      "source_revision_time": "2026-06-10T20:47:00Z"
+    },
+    {
+      "word": "please",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-please.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1208824564,
+      "source_revision_time": "2026-05-05T10:45:21Z"
+    },
+    {
+      "word": "sorry",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-sorry.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229163802,
+      "source_revision_time": "2026-06-10T20:36:36Z"
+    },
+    {
+      "word": "panda",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-panda.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229150686,
+      "source_revision_time": "2026-06-10T20:06:40Z"
+    },
+    {
+      "word": "duck",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-duck.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229129086,
+      "source_revision_time": "2026-06-10T19:07:57Z"
+    },
+    {
+      "word": "bear",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-bear.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229118979,
+      "source_revision_time": "2026-06-10T18:37:51Z"
+    },
+    {
+      "word": "listen",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-listen.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229142800,
+      "source_revision_time": "2026-06-10T19:47:30Z"
+    },
+    {
+      "word": "sit",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-sit.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229162674,
+      "source_revision_time": "2026-06-10T20:33:40Z"
+    },
+    {
+      "word": "stand",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-stand.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1114030418,
+      "source_revision_time": "2025-11-12T13:41:22Z"
+    },
+    {
+      "word": "open",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-open.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229149663,
+      "source_revision_time": "2026-06-10T20:04:05Z"
+    },
+    {
+      "word": "yes",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-yes.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1229174107,
+      "source_revision_time": "2026-06-10T21:04:13Z"
+    },
+    {
+      "word": "no",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-no.ogg",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "attribution_required": "true",
+      "source_revision": 1085196120,
+      "source_revision_time": "2025-09-13T18:53:03Z"
     }
   ],
   "synthetic_audio": {

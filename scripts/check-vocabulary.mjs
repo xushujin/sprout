@@ -8,6 +8,7 @@ import {
   GENERAL_WORDS_BY_GRADE,
   GRADE_BANDS,
 } from '../src/data/general-words.ts';
+import { PRESCHOOL_THEMES, PRESCHOOL_WORDS, preschoolWords } from '../src/data/preschool.ts';
 
 const approved = new Set(GENERAL_WORDS.map((word) => word.id));
 const audio = JSON.parse(readFileSync('public/audio/sources.json', 'utf8'));
@@ -49,6 +50,20 @@ for (const [grade, words] of Object.entries(GRADE_BANDS)) {
   }
 }
 assert.equal(cumulativeCount, GENERAL_WORD_TARGET);
+const preschoolIds = new Set();
+for (const theme of PRESCHOOL_THEMES) {
+  assert.match(theme.id, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+  assert.equal(theme.wordIds.length, 10, `preschool ${theme.id} must offer at least two rounds`);
+  assert.equal(new Set(theme.wordIds).size, theme.wordIds.length, `duplicate in ${theme.id}`);
+  assert.equal(preschoolWords(theme.id).length, 10);
+  for (const id of theme.wordIds) {
+    assert.ok(approved.has(id), `preschool source must remain in approved vocabulary: ${id}`);
+    // Different preschool scenes can revisit a familiar word in a new context.
+    preschoolIds.add(id);
+  }
+}
+assert.equal(PRESCHOOL_WORDS.length, 50);
+assert.equal(preschoolIds.size, 50);
 for (const file of readdirSync('public/audio').filter((name) => name.endsWith('.mp3'))) {
   assert.ok(approved.has(file.slice(0, -4)), `unapproved MP3: ${file}`);
 }
@@ -74,5 +89,5 @@ if (process.argv.includes('--dist')) {
     assert.ok(approved.has(file.slice(0, -4)), `unapproved built MP3: ${file}`);
 }
 console.log(
-  `Content verified: ${CURRICULUM_CORE_TARGET}-word curriculum reference target, ${approved.size} unique words and attributed MP3s; no external textbook data.`,
+  `Content verified: ${CURRICULUM_CORE_TARGET}-word curriculum reference target, ${approved.size} attributed MP3s, and ${preschoolIds.size} preschool vocabulary items; no external textbook data.`,
 );

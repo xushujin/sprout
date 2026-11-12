@@ -1,0 +1,415 @@
+{
+  "checked_at": "2026-11-12T01:39:42.117Z",
+  "wave": 2,
+  "replaced_count": 39,
+  "preschool_open_recordings": 48,
+  "preschool_synthesized": ["black", "pink"],
+  "total_open_recordings": 60,
+  "total_synthesized": 540,
+  "audio_cache_version": 3,
+  "signal_checks": {
+    "files_measured": 60,
+    "silent_files": 0,
+    "full_scale_clipping_files": 0,
+    "maximum_decoded_sample_peak": 0.9501,
+    "note": "Automated decoding and signal checks do not establish phonetic correctness or subjective listening quality."
+  },
+  "replacements": [
+    {
+      "word": "red",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-red.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "07926db559f802c7de7949fad9522e4553d0891315d1a2334225fe34c2186c3b",
+      "duration": 0.5689,
+      "peak": 0.6955,
+      "rms_db": -19.87
+    },
+    {
+      "word": "blue",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-blue.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "fa7d5ae1d1a8c0ba4e5287a4ee58cc55862774d7b55606ca109fa1f399ba8272",
+      "duration": 0.5805,
+      "peak": 0.7026,
+      "rms_db": -19.38
+    },
+    {
+      "word": "yellow",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-yellow.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "e555c49a91f0947e25e2d84ced79f3574f78f16c9dde8d0f2c6536c56a67eb97",
+      "duration": 0.5457,
+      "peak": 0.5035,
+      "rms_db": -19.24
+    },
+    {
+      "word": "green",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-green.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "fec7aa3a0ffaa26102de5c603507e149562fe32ce5153b8ff185cdeea18d8398",
+      "duration": 0.7198,
+      "peak": 0.6791,
+      "rms_db": -18.58
+    },
+    {
+      "word": "white",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-white.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "05c8b1f0ca1288668a7341fc307094dbf31595a2dbcec1b4472945a673cd0cac",
+      "duration": 0.685,
+      "peak": 0.9283,
+      "rms_db": -19.3
+    },
+    {
+      "word": "brown",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-brown.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "0f445bebc3c2003423a3536c9f07febcea601c045f5ba4de91fd5a33358fd29e",
+      "duration": 0.6037,
+      "peak": 0.8217,
+      "rms_db": -19.46
+    },
+    {
+      "word": "one",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-one.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "353fac0607d827b47aa9ebd67490ccb54eb4159e9dfa8d1e522eb162719c0772",
+      "duration": 0.8127,
+      "peak": 0.6163,
+      "rms_db": -19.22
+    },
+    {
+      "word": "two",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-two.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "37bfe270b4ca80c069de5c12944e02ab9244b17b6c56a47c66b798a2dcf7a082",
+      "duration": 0.6037,
+      "peak": 0.5881,
+      "rms_db": -19.7
+    },
+    {
+      "word": "three",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-three.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "33c0968b07f7bbbf5adeacfccb4d8cbb50c72836cf097f16d1684244bf0c2a9b",
+      "duration": 0.6385,
+      "peak": 0.584,
+      "rms_db": -19.8
+    },
+    {
+      "word": "four",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-four.ogg",
+      "author": "Dvortygirl",
+      "license": "Public domain",
+      "sha256": "8019f70a649a705da0f5e30a9868c7228406d76d200bce6da733bcdbcd8306ba",
+      "duration": 0.4876,
+      "peak": 0.6144,
+      "rms_db": -18.73
+    },
+    {
+      "word": "five",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-five.ogg",
+      "author": "Dvortygirl",
+      "license": "Public domain",
+      "sha256": "23ae67333550cbe380d6dea30b63d21c96996558761cb7a613fd3e8f3feee66e",
+      "duration": 0.6269,
+      "peak": 0.7341,
+      "rms_db": -20.65
+    },
+    {
+      "word": "six",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-six.ogg",
+      "author": "No machine-readable author provided. TheDaveRoss assumed (based on copyright claims).",
+      "license": "CC BY-SA 3.0",
+      "sha256": "dbc7cb57a51871e6661718e13019ab58982682a1ad5cdfeaca06bee5c6dc5532",
+      "duration": 0.6734,
+      "peak": 0.7537,
+      "rms_db": -18.68
+    },
+    {
+      "word": "seven",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-seven.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "d3eb87d5908d9beb215d65a4bd2765814e5dbb3442c9cf19c9cccc06fe6b3c2a",
+      "duration": 0.6037,
+      "peak": 0.7265,
+      "rms_db": -23.97
+    },
+    {
+      "word": "eight",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-eight.ogg",
+      "author": "recorded by TheDaveRoss",
+      "license": "CC BY-SA 3.0",
+      "sha256": "b7fb31b48f090d6004bd4a6221e772c1233eb5450704750de86fbcc483ff8f4c",
+      "duration": 0.5224,
+      "peak": 0.8229,
+      "rms_db": -17.73
+    },
+    {
+      "word": "nine",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-nine.ogg",
+      "author": "No machine-readable author provided. TheDaveRoss assumed (based on copyright claims).",
+      "license": "CC BY-SA 3.0",
+      "sha256": "c7397c8bf99e11f570a10edf6dc7a7b0497f41cab4374f3d0d6d90f30c43476f",
+      "duration": 0.743,
+      "peak": 0.5578,
+      "rms_db": -18.13
+    },
+    {
+      "word": "ten",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-ten.ogg",
+      "author": "No machine-readable author provided. TheDaveRoss assumed (based on copyright claims).",
+      "license": "CC BY-SA 3.0",
+      "sha256": "2676e1a79df3bf78a81cb4210de9ea2af43ce85bad49b141f9da30c0a3eb94d1",
+      "duration": 0.5689,
+      "peak": 0.9501,
+      "rms_db": -14.58
+    },
+    {
+      "word": "mother",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-mother.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "c45076556c4ee70d686e6035e73bb6e8167d6c753074470b80bda2b765f39ca8",
+      "duration": 0.6269,
+      "peak": 0.5432,
+      "rms_db": -19.55
+    },
+    {
+      "word": "father",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-father.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "c181c8e898cb82add5b53f3a56581a152fabce5620b596b5f9f23370cca8c046",
+      "duration": 0.685,
+      "peak": 0.6612,
+      "rms_db": -20.4
+    },
+    {
+      "word": "family",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-family.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "95825a7b89b8120370362c83c6f96be2f5214025109994433ea862a7c1b4d019",
+      "duration": 0.6037,
+      "peak": 0.6031,
+      "rms_db": -20.42
+    },
+    {
+      "word": "baby",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-baby.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "972459eacd90a3242dca51b91e6e5ec6817f3b1c973e971eeb59613aad63acf7",
+      "duration": 0.4992,
+      "peak": 0.5677,
+      "rms_db": -18.96
+    },
+    {
+      "word": "water",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-water.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "e6d94be8bf132e67f1abf15213b45d26063c42c41a828f066dcb6d7ab69cac38",
+      "duration": 0.7663,
+      "peak": 0.7371,
+      "rms_db": -19.76
+    },
+    {
+      "word": "big",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-big.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "fadd490f028f768e6b7f9a9bd36db83e00fe3910f2daea43b41ed81ab4da448f",
+      "duration": 0.6269,
+      "peak": 0.7433,
+      "rms_db": -18.99
+    },
+    {
+      "word": "small",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-small.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "7063c5016d69a797c5f77efbd63ec86ada285558192d01c08561e3ab3d7d0c05",
+      "duration": 0.6966,
+      "peak": 0.6364,
+      "rms_db": -20.5
+    },
+    {
+      "word": "good",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-good.ogg",
+      "author": "作者未标注（Commons PD-self）",
+      "license": "Public domain",
+      "sha256": "a16aebc959ca7626dd3ae5c4544e35055891a553599fb878f0397e4aee975f9a",
+      "duration": 0.5341,
+      "peak": 0.6208,
+      "rms_db": -17.75
+    },
+    {
+      "word": "ball",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-ball.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "390c4d74cd56c03003a6948825f43d27b10f85ab2aeeb72ee57ce88517aea87b",
+      "duration": 0.5921,
+      "peak": 0.6522,
+      "rms_db": -19.81
+    },
+    {
+      "word": "hi",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-hi.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "ca206cdb67c7e1b1eb34d9271626d8dd9e370df1ff2cfdc053da25ab21ebc8af",
+      "duration": 0.5689,
+      "peak": 0.7194,
+      "rms_db": -21.06
+    },
+    {
+      "word": "bye",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-bye.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "4651ce6f14661db6c7b9e1201231c82d4fec9e22a6cd9665cf910ed2b2e526c8",
+      "duration": 0.5224,
+      "peak": 0.6452,
+      "rms_db": -19.71
+    },
+    {
+      "word": "thanks",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-thanks.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "d6bb7f397edd27e6acd13d66a4fbf72574a0b508aafbe6560c42444064218c25",
+      "duration": 0.6502,
+      "peak": 0.7452,
+      "rms_db": -20.44
+    },
+    {
+      "word": "please",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-please.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "4b70f38927a604de75192f1367ed8e4fe4a958925d11b094d3594fc2bff1359f",
+      "duration": 0.6385,
+      "peak": 0.5035,
+      "rms_db": -19.49
+    },
+    {
+      "word": "sorry",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-sorry.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "86bd87a0f6bdb9affaa0a0c81c7aef987219fad3c5310d7f905b04e7b71e1d37",
+      "duration": 0.7082,
+      "peak": 0.6935,
+      "rms_db": -20.35
+    },
+    {
+      "word": "panda",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-panda.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "96db76e3fa140c8ed53d0b67d4827a6aa9a68ccb2f2d5340bb7ff0c9233c143e",
+      "duration": 1,
+      "peak": 0.764,
+      "rms_db": -20.22
+    },
+    {
+      "word": "duck",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-duck.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "5df39c6734f289345b9c1c81d887fff4f9eff5622d9784b311c240b1d69e42c9",
+      "duration": 0.95,
+      "peak": 0.7442,
+      "rms_db": -24.81
+    },
+    {
+      "word": "bear",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-bear.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "6887252fe12e993acadcc7b919bd980a753365de2e1ea8036d80e33efd7b6ddb",
+      "duration": 0.7546,
+      "peak": 0.6516,
+      "rms_db": -20.58
+    },
+    {
+      "word": "listen",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-listen.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "1649a558d63648e2ecd6a5201d5043c77a1acdf11a78522bcc2ddfe538bfe6f9",
+      "duration": 0.6966,
+      "peak": 0.7281,
+      "rms_db": -19.62
+    },
+    {
+      "word": "sit",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-sit.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "2380638ce66c07616221e9be66f957ee6384e86ec3e61398fbc8186d6c31954e",
+      "duration": 0.6385,
+      "peak": 0.5099,
+      "rms_db": -20.99
+    },
+    {
+      "word": "stand",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-stand.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "511604dbe7a87c5e45bb36ae2648009d181ea6459fe60fb924f878bc8e13175e",
+      "duration": 0.8359,
+      "peak": 0.6279,
+      "rms_db": -20.84
+    },
+    {
+      "word": "open",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-open.ogg",
+      "author": "No machine-readable author provided. TheDaveRoss assumed (based on copyright claims).",
+      "license": "CC BY-SA 3.0",
+      "sha256": "7035aef3b7a2122e2043eec3de6dbfea4a486dbf12cdeeffc5079aee2778cf92",
+      "duration": 0.5573,
+      "peak": 0.6523,
+      "rms_db": -17.8
+    },
+    {
+      "word": "yes",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-yes.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "0c16818456f7be728714825bf004108ac79bef2f79c694264c667291804eb351",
+      "duration": 0.8359,
+      "peak": 0.8442,
+      "rms_db": -19.09
+    },
+    {
+      "word": "no",
+      "source": "https://commons.wikimedia.org/wiki/File:En-us-no.ogg",
+      "author": "Dvortygirl",
+      "license": "CC BY-SA 3.0",
+      "sha256": "e9fdb5b67298eec13be1f1d4ba4858766f56c27510365879310f4ef35aa475c8",
+      "duration": 0.6502,
+      "peak": 0.645,
+      "rms_db": -19.73
+    }
+  ],
+  "production_verification": {
+    "deployment": "36e7c467",
+    "verified_at": "2026-11-12T01:52:23.983Z",
+    "decoded_and_sha256_matched": 600,
+    "wrote_production_learning_data": false
+  }
+}

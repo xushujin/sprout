@@ -58,6 +58,26 @@ test('MP3s play without browser speech support, including replay and retry after
   expect((await played()).at(-1)).toContain('/audio/banana.mp3');
   await expect(page.getByText('音频暂时没播出，请点发音按钮再试一次。')).toHaveCount(0);
 
+  // Exercise refreshed short-word and number recordings through the real player,
+  // with system speech disabled. A new URL bypasses the previous audio cache.
+  for (const [theme, word] of [
+    ['英语启蒙与问候', 'hi'],
+    ['数字与数量', 'one'],
+  ] as const) {
+    await page.goto('/');
+    const picker = page.getByRole('region', { name: '选择学习词库' });
+    await picker.getByRole('tab', { name: '幼小衔接' }).click();
+    await picker.getByRole('button', { name: new RegExp(`^${theme}`) }).click();
+    await page.getByRole('button', { name: '开始一轮学习' }).click();
+    await expect(page.locator('.study-card h1')).toHaveText(word);
+    await page.getByRole('button', { name: '听一听发音' }).click();
+    await expect.poll(played).toHaveLength(1);
+    const playedUrl = new URL((await played())[0]);
+    expect(playedUrl.pathname).toBe(`/audio/${word}.mp3`);
+    expect(playedUrl.searchParams.get('v')).toBe('3');
+    await expect(page.getByText('音频暂时没播出，请点发音按钮再试一次。')).toHaveCount(0);
+  }
+
   const words = (await (await page.request.get('/audio/sources.json')).json()).map(
     (item: { word: string }) => item.word,
   );

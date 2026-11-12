@@ -165,6 +165,23 @@ for (const screen of screens) {
     await touchTarget(picker.getByRole('button', { name: '六年级' }));
     await picker.getByRole('button', { name: '六年级' }).tap();
     await expect(page.locator('.preview-card h3').first()).toHaveText('apple');
+    await expect(picker.getByRole('tab')).toHaveCount(3);
+    await picker.getByRole('tab', { name: '幼小衔接' }).tap();
+    await expect(picker.getByText('先听声音，再认一认')).toBeVisible();
+    await picker.getByRole('button', { name: /^数字与数量/ }).tap();
+    await expect(page.locator('.preview-card h3').first()).toHaveText('one');
+    await page.setViewportSize(screen.landscape);
+    await shot('preschool-landscape');
+    await noPageOverflow(page);
+    await expect(picker.getByRole('button', { name: /^数字与数量/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await page.setViewportSize(screen.portrait);
+    await shot('preschool-portrait');
+    await noPageOverflow(page);
+    await picker.getByRole('tab', { name: '按年级' }).tap();
+    await picker.getByRole('button', { name: '六年级' }).tap();
     await page.setViewportSize(screen.landscape);
     await shot('garden-landscape');
     await noPageOverflow(page);
