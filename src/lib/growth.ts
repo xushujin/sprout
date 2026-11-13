@@ -10,11 +10,11 @@ export interface GrowthStage {
 export const GROWTH_STAGES: readonly GrowthStage[] = [
   { id: 'seed', name: '种子', min: 0, hint: '一颗种子正在土里等你' },
   { id: 'sprout', name: '发芽', min: 30, hint: '两片小叶子探出了头' },
-  { id: 'seedling', name: '幼苗', min: 200, hint: '茎长高了，叶子也多了' },
-  { id: 'bud', name: '花苞', min: 500, hint: '结出了第一个花苞' },
-  { id: 'bloom', name: '开花', min: 900, hint: '第一圈花瓣打开了' },
-  { id: 'full', name: '盛放', min: 1400, hint: '整朵花都开了' },
-  { id: 'seeds', name: '结籽', min: 2000, hint: '花盘里结满了种子' },
+  { id: 'seedling', name: '幼苗', min: 250, hint: '茎长高了，叶子也多了' },
+  { id: 'bud', name: '花苞', min: 750, hint: '结出了第一个花苞' },
+  { id: 'bloom', name: '开花', min: 1500, hint: '第一圈花瓣打开了' },
+  { id: 'full', name: '盛放', min: 3000, hint: '整朵花都开了' },
+  { id: 'seeds', name: '结籽', min: 6000, hint: '花盘里结满了种子' },
 ];
 
 export interface Growth {

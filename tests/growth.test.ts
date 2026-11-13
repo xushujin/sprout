@@ -13,21 +13,26 @@ describe('sunflower growth', () => {
   it('moves through a stage boundary exactly at its threshold', () => {
     expect(growthFor(29).stage.name).toBe('种子');
     expect(growthFor(30).stage.name).toBe('发芽');
-    expect(growthFor(199).stage.name).toBe('发芽');
-    expect(growthFor(200).stage.name).toBe('幼苗');
+    expect(growthFor(249).stage.name).toBe('发芽');
+    expect(growthFor(250).stage.name).toBe('幼苗');
   });
 
   it('reports progress inside the current stage only', () => {
-    // 幼苗 spans 200–500; 350 is halfway through.
-    const growth = growthFor(350);
+    // 幼苗 spans 250–750; 500 is halfway through.
+    const growth = growthFor(500);
     expect(growth.stage.name).toBe('幼苗');
     expect(growth.next?.name).toBe('花苞');
-    expect(growth.toNext).toBe(150);
+    expect(growth.toNext).toBe(250);
     expect(growth.progress).toBeCloseTo(0.5);
   });
 
+  it('keeps the final seed stage for a full 600-word journey', () => {
+    expect(growthFor(5999).stage.name).toBe('盛放');
+    expect(growthFor(6000).stage.name).toBe('结籽');
+  });
+
   it('keeps a finished garden at full bloom', () => {
-    const growth = growthFor(2600);
+    const growth = growthFor(6600);
     expect(growth.stage.name).toBe('结籽');
     expect(growth.next).toBeNull();
     expect(growth.toNext).toBe(0);
