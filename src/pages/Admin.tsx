@@ -16,6 +16,7 @@ export function Admin() {
   const [error, setError] = useState('');
   const [resetId, setResetId] = useState<string | null>(null);
   const [renameId, setRenameId] = useState<string | null>(null);
+  const [usernameId, setUsernameId] = useState<string | null>(null);
   async function load(next?: string) {
     setBusy(true);
     setError('');
@@ -78,6 +79,35 @@ export function Admin() {
       );
       setRenameId(null);
       setMessage('昵称已更新，学生刷新页面后即可看到；排行榜将在下次自动刷新后更新。');
+    } catch (cause) {
+      setError((cause as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function changeUsername(event: FormEvent<HTMLFormElement>, id: string) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const fields = new FormData(form);
+    const username = String(fields.get('username')).trim();
+    const password = String(fields.get('password'));
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const password_proof = await derivePasswordProof(username, password);
+      const result = await api<{ username: string }>(
+        `/admin/students/${id}/username`,
+        { username, password_proof },
+        { method: 'PATCH' },
+      );
+      setStudents((items) =>
+        items.map((student) =>
+          student.id === id ? { ...student, username: result.username } : student,
+        ),
+      );
+      setUsernameId(null);
+      setMessage('登录账号已更新，学生旧会话已撤销；请用新账号和新密码告知学生。');
     } catch (cause) {
       setError((cause as Error).message);
     } finally {
@@ -239,6 +269,40 @@ export function Admin() {
                   <td>
                     {renameId === s.id ? (
                       <span className="muted">正在修改昵称</span>
+                    ) : usernameId === s.id ? (
+                      <form className="reset-form" onSubmit={(e) => void changeUsername(e, s.id)}>
+                        <input
+                          name="username"
+                          aria-label={`为${s.display_name}设置新登录账号`}
+                          defaultValue={s.username}
+                          required
+                          minLength={3}
+                          maxLength={32}
+                          pattern="[a-zA-Z0-9][a-zA-Z0-9._\-]{2,31}"
+                          autoComplete="off"
+                          placeholder="新登录账号"
+                        />
+                        <input
+                          name="password"
+                          aria-label={`为${s.display_name}设置新密码`}
+                          type="password"
+                          required
+                          minLength={8}
+                          maxLength={128}
+                          autoComplete="new-password"
+                          placeholder="新密码，至少 8 位"
+                        />
+                        <button className="button small primary" disabled={busy}>
+                          保存账号
+                        </button>
+                        <button
+                          className="button small secondary"
+                          type="button"
+                          onClick={() => setUsernameId(null)}
+                        >
+                          取消
+                        </button>
+                      </form>
                     ) : resetId === s.id ? (
                       <form className="reset-form" onSubmit={(e) => void reset(e, s.id)}>
                         <input
@@ -267,7 +331,20 @@ export function Admin() {
                         <button
                           className="button small secondary"
                           onClick={() => {
+                            setUsernameId(s.id);
+                            setRenameId(null);
+                            setResetId(null);
+                            setError('');
+                            setMessage('');
+                          }}
+                        >
+                          修改账号
+                        </button>
+                        <button
+                          className="button small secondary"
+                          onClick={() => {
                             setRenameId(s.id);
+                            setUsernameId(null);
                             setResetId(null);
                             setError('');
                             setMessage('');
@@ -279,6 +356,7 @@ export function Admin() {
                           className="button small secondary"
                           onClick={() => {
                             setResetId(s.id);
+                            setUsernameId(null);
                             setRenameId(null);
                             setError('');
                             setMessage('');

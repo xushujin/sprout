@@ -21,7 +21,8 @@ export interface ScoreEvent {
 }
 
 export interface Leaderboard {
-  week_start: string;
+  range?: 'week' | 'all';
+  week_start?: string;
   generated_at: number | null;
   entries: {
     display_name: string;

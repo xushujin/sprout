@@ -286,23 +286,21 @@ describe('sessions and access control', () => {
       (await request('/login', { username: 'student01', password_proof: newPassword })).status,
     ).toBe(200);
   });
-  it('changes the login name and keeps the account usable with the new proof', async () => {
-    const auth = await login();
+  it('lets only an admin change a student login name and revokes the old session', async () => {
+    const student = await login();
+    const admin = await login('admin');
     const changed = await request(
-      '/me/username',
-      {
-        username: 'student02',
-        current_password_proof: password,
-        new_password_proof: newPassword,
-      },
-      auth.cookie,
+      `/admin/students/${studentId}/username`,
+      { username: 'student02', password_proof: newPassword },
+      admin.cookie,
       undefined,
       'PATCH',
     );
     expect(changed.status).toBe(200);
     expect(await changed.json()).toMatchObject({ ok: true, username: 'student02' });
 
-    // The stored hash must follow the new username, not the old proof.
+    // The old session is revoked and the old credentials no longer work.
+    expect((await request('/me', undefined, student.cookie)).status).toBe(401);
     expect(
       (await request('/login', { username: 'student01', password_proof: password })).status,
     ).toBe(401);
@@ -311,33 +309,33 @@ describe('sessions and access control', () => {
       password_proof: newPassword,
     });
     expect(relogin.status).toBe(200);
+
+    // Students cannot use the admin endpoint.
     const cookie = relogin.headers.get('Set-Cookie')!.split(';')[0];
+    expect(
+      (
+        await request(
+          `/admin/students/${studentId}/username`,
+          { username: 'student03', password_proof: password },
+          cookie,
+          undefined,
+          'PATCH',
+        )
+      ).status,
+    ).toBe(403);
 
-    const wrongPassword = await request(
-      '/me/username',
-      {
-        username: 'student03',
-        current_password_proof: password,
-        new_password_proof: password,
-      },
-      cookie,
-      undefined,
-      'PATCH',
-    );
-    expect(wrongPassword.status).toBe(403);
-
-    const taken = await request(
-      '/me/username',
-      {
-        username: 'admin',
-        current_password_proof: newPassword,
-        new_password_proof: password,
-      },
-      cookie,
-      undefined,
-      'PATCH',
-    );
-    expect(taken.status).toBe(409);
+    // A duplicate name is rejected.
+    expect(
+      (
+        await request(
+          `/admin/students/${studentId}/username`,
+          { username: 'admin', password_proof: password },
+          admin.cookie,
+          undefined,
+          'PATCH',
+        )
+      ).status,
+    ).toBe(409);
   });
 });
 
@@ -530,6 +528,21 @@ describe('rounds and weekly snapshots', () => {
     // Lifetime includes both rounds; the weekly total only includes this week's.
     expect(snapshot.entries).toEqual([
       { display_name: '小橘子', points: 45, rounds: 1, lifetime_points: 90 },
+    ]);
+
+    const all = (await (
+      await request('/leaderboard?range=all', undefined, undefined, {
+        DB: {
+          prepare: () => {
+            throw new Error('must not query D1');
+          },
+        } as unknown as D1Database,
+      })
+    ).json()) as { range: string; week_start?: string; entries: unknown[] };
+    expect(all.range).toBe('all');
+    expect(all.week_start).toBeUndefined();
+    expect(all.entries).toEqual([
+      { display_name: '小橘子', points: 90, rounds: 2, lifetime_points: 90 },
     ]);
   });
 

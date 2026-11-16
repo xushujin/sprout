@@ -21,7 +21,7 @@ flowchart LR
 
 核心行为：
 
-- 管理员由 seed 创建；后台可创建学生、重置密码、分页查看累计学习数据与本周副行。学生在侧栏“账号设置”里可用当前密码修改登录账号名。
+- 管理员由 seed 创建；后台可创建学生、修改登录账号、重置密码、分页查看累计学习数据与本周副行。修改登录账号必须同时设置新密码（密码凭据绑定用户名），并撤销学生旧会话。
 - 学生默认勾选“记住我”：Cookie 和服务端会话有效期 30 天；未勾选时 Cookie 无 `Max-Age/Expires`，服务端最长 12 小时。管理员最长 2 小时，不允许 30 天登录。
 - 页面启动先调用 `/api/me`；有效会话直接进入学习页。只保存上次用户名用于预填，**不保存密码、密码派生凭据、token 或登录身份**。学习进度另以用户 ID 隔离。
 - 词库以教育部公开的《义务教育英语课程标准（2022年版）》附录 3 中 505 个二级词汇为范围和能力参照，由 WordSprout 自主分级并补充 95 个主题拓展词，共 600 个不重复常用词。1–6 年级各新增 100 词、累计 100 / 200 / 300 / 400 / 500 / 600 词；难度为累计词库：入门 200 词、基础累计 400 词、进阶累计 600 词。官方课标没有与本应用完全相同的逐年级公开分配，因此页面不宣称教材同步或官方分级。600 个词均有静态 MP3，不提供未经再分发授权核验的第三方教材内容。
@@ -43,7 +43,7 @@ src/
   pages/Login.tsx            # 浏览器密码管理器、默认记住我
   pages/Learn.tsx            # 5 词学习、计时选图、反馈与积分
   pages/Leaderboard.tsx      # KV 快照与每人向日葵阶段展示
-  pages/Admin.tsx            # 建号、密码重置、累计 / 本周数据
+  pages/Admin.tsx            # 建号、改账号、密码重置、累计 / 本周数据
   pages/Profile.tsx          # 用户形象、装饰商店与积分消费
   data/words.ts              # 首批 20 个基础词与稳定 ID
   data/curriculum-words.ts   # 600 词、课标参考与累计分级
@@ -61,7 +61,6 @@ src/
   components/SoundControls.tsx # 音乐 / 音效开关
   components/Sunflower.tsx   # 向日葵七阶段插画（预渲染 WebP）与答题小芽
   components/UserAvatar.tsx  # 分层 SVG 用户形象
-  components/AccountDialog.tsx # 修改登录账号名
   styles.css                 # 手机 / 桌面布局
 worker/
   index.ts                   # API 路由与 Cron
@@ -140,20 +139,20 @@ Workers Free 每请求仅有 10 ms CPU，不能假设高迭代 PBKDF2 会被 `as
 
 所有成功响应均为 JSON；错误为 `{ "error": "提示", "code": "可选错误码" }`。失败返回 400 / 401 / 403 / 409 / 422 / 429 / 503。写请求必须带同域 `Origin`、`Content-Type: application/json`。会话只走 Cookie。
 
-| 方法  | 路径                               | 输入 / 作用                                                                    |
-| ----- | ---------------------------------- | ------------------------------------------------------------------------------ |
-| POST  | `/api/login`                       | `{ username, password_proof, rememberMe }`，返回 `{ user }` 并签发 Cookie      |
-| POST  | `/api/logout`                      | `{}`，删除会话、清 Cookie                                                      |
-| GET   | `/api/me`                          | 当前用户；未登录返回 401                                                       |
-| PATCH | `/api/me/username`                 | `{ username, current_password_proof, new_password_proof }`；改名并重算密码凭据 |
-| PATCH | `/api/me/avatar`                   | `{ avatar }`；校验基础选项和已购买装饰                                         |
-| POST  | `/api/shop/purchase`               | `{ item_id }`；扣积分、写 `spend_events`，返回新积分与已拥有列表               |
-| POST  | `/api/scores`                      | 学生整轮事件，返回 `{ ok, accepted, points_earned }`；重复时 `accepted=false`  |
-| GET   | `/api/leaderboard`                 | 仅读 KV，含 `lifetime_points`；无本周快照时返回空榜                            |
-| POST  | `/api/admin/students`              | `{ username, display_name, password_proof }`；只能创建学生                     |
-| GET   | `/api/admin/students?cursor=...`   | 每页 50 名学生的累计汇总与本周数据，返回 `next_cursor`                         |
-| PATCH | `/api/admin/students/:id`          | `{ display_name }`；仅管理员可修改学生昵称，排行榜在下次快照刷新               |
-| POST  | `/api/admin/students/:id/password` | `{ password_proof }`；重置并撤销会话                                           |
+| 方法  | 路径                               | 输入 / 作用                                                                   |
+| ----- | ---------------------------------- | ----------------------------------------------------------------------------- |
+| POST  | `/api/login`                       | `{ username, password_proof, rememberMe }`，返回 `{ user }` 并签发 Cookie     |
+| POST  | `/api/logout`                      | `{}`，删除会话、清 Cookie                                                     |
+| GET   | `/api/me`                          | 当前用户；未登录返回 401                                                      |
+| PATCH | `/admin/students/:id/username`     | `{ username, password_proof }`；仅管理员，改账号并同时设新密码、撤销旧会话    |
+| PATCH | `/api/me/avatar`                   | `{ avatar }`；校验基础选项和已购买装饰                                        |
+| POST  | `/api/shop/purchase`               | `{ item_id }`；扣积分、写 `spend_events`，返回新积分与已拥有列表              |
+| POST  | `/api/scores`                      | 学生整轮事件，返回 `{ ok, accepted, points_earned }`；重复时 `accepted=false` |
+| GET   | `/api/leaderboard`                 | 仅读 KV，含 `lifetime_points`；无本周快照时返回空榜                           |
+| POST  | `/api/admin/students`              | `{ username, display_name, password_proof }`；只能创建学生                    |
+| GET   | `/api/admin/students?cursor=...`   | 每页 50 名学生的累计汇总与本周数据，返回 `next_cursor`                        |
+| PATCH | `/api/admin/students/:id`          | `{ display_name }`；仅管理员可修改学生昵称，排行榜在下次快照刷新              |
+| POST  | `/api/admin/students/:id/password` | `{ password_proof }`；重置并撤销会话                                          |
 
 整轮输入示例（`user_id` 必须与当前会话一致，只用于阻止多标签页账号串写）：
 

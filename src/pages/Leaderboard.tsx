@@ -5,15 +5,21 @@ import { growthFor } from '../lib/growth';
 import { Icon } from '../components/Icons';
 import { Sunflower } from '../components/Sunflower';
 
+type Range = 'week' | 'all';
+
 export function Leaderboard() {
+  const [range, setRange] = useState<Range>('week');
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [busy, setBusy] = useState(true);
   const [failed, setFailed] = useState(false);
-  async function load() {
+
+  async function load(next: Range = range) {
+    setRange(next);
     setBusy(true);
     setFailed(false);
+    setSnapshot(null);
     try {
-      setSnapshot(await api<Snapshot>('/leaderboard'));
+      setSnapshot(await api<Snapshot>(`/leaderboard?range=${next}`));
     } catch {
       setFailed(true);
     } finally {
@@ -21,8 +27,11 @@ export function Leaderboard() {
     }
   }
   useEffect(() => {
-    void load();
+    void load('week');
   }, []);
+
+  const weekly = range === 'week';
+
   return (
     <div className="page-enter">
       <div className="page-heading">
@@ -36,14 +45,35 @@ export function Leaderboard() {
       <section className="leaderboard-card">
         <div className="leaderboard-heading">
           <div>
-            <h2>
-              <Icon name="cup" /> 本周成长星榜
-            </h2>
-            <p className="muted">周一开启新一周 · 每 30 分钟更新 · 仅展示昵称</p>
+            <div className="leaderboard-tabs" role="tablist" aria-label="排行榜范围">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={weekly}
+                className={weekly ? 'active' : ''}
+                onClick={() => void load('week')}
+              >
+                本周星榜
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={!weekly}
+                className={!weekly ? 'active' : ''}
+                onClick={() => void load('all')}
+              >
+                总排行榜
+              </button>
+            </div>
+            <p className="muted">
+              {weekly
+                ? '周一开启新一周 · 每 30 分钟更新 · 仅展示昵称'
+                : '从第一天到现在的累计成长 · 每 30 分钟更新 · 仅展示昵称'}
+            </p>
           </div>
           <button
             className="icon-button"
-            onClick={() => void load()}
+            onClick={() => void load(range)}
             disabled={busy}
             aria-label="刷新排行榜"
           >
@@ -56,8 +86,12 @@ export function Leaderboard() {
         ) : !snapshot?.entries.length ? (
           <div className="empty-state">
             <span>🌱</span>
-            <h3>小芽们正在努力成长</h3>
-            <p>完成学习后，等下一次更新就能看到积分啦。</p>
+            <h3>{weekly ? '本周的小芽正在努力成长' : '总榜还在等第一颗小芽'}</h3>
+            <p>
+              {weekly
+                ? '完成学习后，等下一次更新就能看到积分啦。'
+                : '完成第一轮学习，累计成长就会出现在这里。'}
+            </p>
           </div>
         ) : (
           <ol className="ranking-list">
@@ -79,7 +113,7 @@ export function Leaderboard() {
                 </div>
                 <strong className="rank-points">
                   {entry.points}
-                  <small> 积分</small>
+                  <small> {weekly ? '本周积分' : '成长积分'}</small>
                 </strong>
               </li>
             ))}

@@ -53,7 +53,10 @@ export function Profile({
     const hair = HAIR_OPTIONS[gender].some((item) => item.id === avatar.hair)
       ? avatar.hair
       : HAIR_OPTIONS[gender][0].id;
-    change({ gender, hair });
+    const outfit = OUTFIT_OPTIONS[gender].some((item) => item.id === avatar.outfit)
+      ? avatar.outfit
+      : OUTFIT_OPTIONS[gender][0].id;
+    change({ gender, hair, outfit });
   }
 
   async function persist(next: AvatarConfig, extra: Partial<User> = {}, note = '') {
@@ -214,7 +217,7 @@ export function Profile({
           <div className="avatar-group">
             <span className="avatar-label">基础服饰</span>
             <div className="avatar-options">
-              {OUTFIT_OPTIONS.map((item) => (
+              {OUTFIT_OPTIONS[avatar.gender].map((item) => (
                 <button
                   key={item.id}
                   type="button"

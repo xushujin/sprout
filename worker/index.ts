@@ -151,11 +151,12 @@ async function requireUser(request: Request, env: Env, role?: User['role']) {
   return { user } as const;
 }
 
-async function changeUsername(request: Request, env: Env) {
-  const auth = await requireUser(request, env);
+async function changeStudentUsername(request: Request, env: Env, studentId: string) {
+  const auth = await requireUser(request, env, 'admin');
   if ('response' in auth) return auth.response;
   if (!(await rateLimit(env.WRITE_LIMITER, auth.user.id)))
     return error('操作太频繁，请稍后再试。', 429);
+  if (!/^[0-9a-f-]{36}$/i.test(studentId)) return error('学生编号不正确。', 422);
   let input: Record<string, unknown>;
   try {
     input = await body(request);
@@ -163,28 +164,23 @@ async function changeUsername(request: Request, env: Env) {
     return error('请求格式不正确。', 400);
   }
   const username = typeof input.username === 'string' ? input.username.trim() : '';
-  const currentProof = input.current_password_proof;
-  const newProof = input.new_password_proof;
-  if (
-    !validUsername(username) ||
-    !validPasswordProof(currentProof) ||
-    !validPasswordProof(newProof)
-  )
+  const proof = input.password_proof;
+  if (!validUsername(username) || !validPasswordProof(proof))
     return error('账号或密码格式不正确。', 422);
-  const row = await env.DB.prepare('SELECT password_hash FROM users WHERE id = ?')
-    .bind(auth.user.id)
-    .first<{ password_hash: string }>();
-  if (!row || !(await verifyPassword(currentProof, row.password_hash, env.PASSWORD_PEPPER)))
-    return error('当前密码不正确。', 403, 'INVALID_PASSWORD');
-  if (username.toLowerCase() === auth.user.username.toLowerCase())
-    return json({ ok: true, username: auth.user.username });
-  // The login proof is derived from username + password, so the stored hash must
-  // be replaced with the proof for the new name or the account would lock out.
-  const passwordHash = await hashPassword(newProof, env.PASSWORD_PEPPER);
+  // The login proof is derived from username + password, so the admin must set
+  // a new password at the same time; changing only the name would lock the
+  // student out. The proof sent here already uses the new username.
+  const passwordHash = await hashPassword(proof, env.PASSWORD_PEPPER);
   try {
-    await env.DB.prepare('UPDATE users SET username = ?, password_hash = ? WHERE id = ?')
-      .bind(username, passwordHash, auth.user.id)
-      .run();
+    const results = await env.DB.batch([
+      env.DB.prepare(
+        "UPDATE users SET username = ?, password_hash = ? WHERE id = ? AND role = 'student'",
+      ).bind(username, passwordHash, studentId),
+      env.DB.prepare(
+        "DELETE FROM sessions WHERE user_id = ? AND EXISTS (SELECT 1 FROM users WHERE id = ? AND role = 'student')",
+      ).bind(studentId, studentId),
+    ]);
+    if (!results[0].meta.changes) return error('找不到学生。', 404);
   } catch (cause) {
     if (String(cause).toLowerCase().includes('unique'))
       return error('用户名已经存在。', 409, 'USERNAME_TAKEN');
@@ -423,17 +419,25 @@ async function submitScore(request: Request, env: Env) {
   });
 }
 
-async function leaderboard(env: Env) {
+async function leaderboard(request: Request, env: Env) {
   const week = schoolWeek();
+  const range = new URL(request.url).searchParams.get('range') === 'all' ? 'all' : 'week';
+  const key = range === 'all' ? 'leaderboard:all' : `leaderboard:${week.key}`;
   try {
-    const value = (await env.LEADERBOARD.get(`leaderboard:${week.key}`, 'json')) as {
+    const value = (await env.LEADERBOARD.get(key, 'json')) as {
+      range?: string;
       week_start?: string;
       generated_at?: number;
       entries?: unknown[];
     } | null;
     if (!value || !Array.isArray(value.entries))
-      return json({ week_start: week.key, generated_at: null, entries: [] });
-    return json(value);
+      return json({
+        range,
+        ...(range === 'week' ? { week_start: week.key } : {}),
+        generated_at: null,
+        entries: [],
+      });
+    return json({ ...value, range });
   } catch {
     return error('榜单稍后更新。', 503, 'TEMPORARY_FAILURE');
   }
@@ -598,6 +602,7 @@ export async function generateLeaderboard(env: Env, scheduledTime = Date.now()) 
     .bind(week.start, week.end, week.start, week.end)
     .all<{ display_name: string; lifetime_points: number; points: number; rounds: number }>();
   const snapshot = {
+    range: 'week',
     week_start: week.key,
     generated_at: Date.now(),
     entries: (rows.results ?? []).map((row) => ({
@@ -610,6 +615,30 @@ export async function generateLeaderboard(env: Env, scheduledTime = Date.now()) 
   await env.LEADERBOARD.put(`leaderboard:${week.key}`, JSON.stringify(snapshot), {
     expirationTtl: 8 * 86400,
   });
+
+  // All-time uses the current balance, not a sum of historical events, so
+  // decorations are reflected immediately. No TTL: the last good snapshot
+  // survives a paused Cron.
+  const allRows = await env.DB.prepare(
+    `SELECT u.display_name, u.lifetime_points, COUNT(e.id) AS rounds
+     FROM users u LEFT JOIN score_events e ON e.user_id = u.id
+     WHERE u.role = 'student'
+     GROUP BY u.id
+     HAVING u.lifetime_points > 0 OR COUNT(e.id) > 0
+     ORDER BY u.lifetime_points DESC, rounds DESC, u.display_name COLLATE NOCASE ASC
+     LIMIT 100`,
+  ).all<{ display_name: string; lifetime_points: number; rounds: number }>();
+  const allSnapshot = {
+    range: 'all',
+    generated_at: Date.now(),
+    entries: (allRows.results ?? []).map((row) => ({
+      display_name: row.display_name,
+      points: Number(row.lifetime_points),
+      rounds: Number(row.rounds),
+      lifetime_points: Number(row.lifetime_points),
+    })),
+  };
+  await env.LEADERBOARD.put('leaderboard:all', JSON.stringify(allSnapshot));
 }
 
 async function route({ request, env }: Context) {
@@ -624,13 +653,12 @@ async function route({ request, env }: Context) {
     const user = await currentUser(request, env);
     return user ? json({ user }) : error('请先登录。', 401, 'UNAUTHENTICATED');
   }
-  if (request.method === 'PATCH' && path === '/me/username') return changeUsername(request, env);
   if (request.method === 'PATCH' && path === '/me/avatar') return saveAvatar(request, env);
   if (request.method === 'POST' && path === '/shop/purchase') return purchase(request, env);
   if (request.method === 'POST' && path === '/login') return login(request, env);
   if (request.method === 'POST' && path === '/logout') return logout(request, env);
   if (request.method === 'POST' && path === '/scores') return submitScore(request, env);
-  if (request.method === 'GET' && path === '/leaderboard') return leaderboard(env);
+  if (request.method === 'GET' && path === '/leaderboard') return leaderboard(request, env);
   if (request.method === 'POST' && path === '/admin/students') return createStudent(request, env);
   if (request.method === 'GET' && path === '/admin/students') return listStudents(request, env);
   const studentMatch = path.match(/^\/admin\/students\/([0-9a-f-]+)$/i);
@@ -639,6 +667,9 @@ async function route({ request, env }: Context) {
   const resetMatch = path.match(/^\/admin\/students\/([0-9a-f-]+)\/password$/i);
   if (request.method === 'POST' && resetMatch)
     return resetStudentPassword(request, env, resetMatch[1]);
+  const usernameMatch = path.match(/^\/admin\/students\/([0-9a-f-]+)\/username$/i);
+  if (request.method === 'PATCH' && usernameMatch)
+    return changeStudentUsername(request, env, usernameMatch[1]);
   return error('Not found', 404);
 }
 

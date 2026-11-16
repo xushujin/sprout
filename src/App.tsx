@@ -10,7 +10,6 @@ import {
 } from './lib/progress';
 import { syncProgress, type SyncStatus } from './lib/sync';
 import { Icon } from './components/Icons';
-import { AccountDialog } from './components/AccountDialog';
 import { UserAvatar } from './components/UserAvatar';
 import { Login } from './pages/Login';
 import { Learn } from './pages/Learn';
@@ -39,7 +38,6 @@ export function App() {
   const [sync, setSync] = useState<SyncStatus>('idle');
   const [activeRound, setActiveRound] = useState(false);
   const [logoutBusy, setLogoutBusy] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
   const [message, setMessage] = useState('');
   const progressRef = useRef(progress);
   progressRef.current = progress;
@@ -196,14 +194,6 @@ export function App() {
             <div className="profile-actions">
               <button
                 className="icon-button"
-                onClick={() => setAccountOpen(true)}
-                disabled={activeRound}
-                aria-label="账号设置"
-              >
-                <Icon name="user" size={19} />
-              </button>
-              <button
-                className="icon-button"
                 onClick={() => void logout()}
                 disabled={logoutBusy || activeRound || sync === 'syncing'}
                 aria-label="退出登录"
@@ -300,17 +290,6 @@ export function App() {
           </a>
         </footer>
       </div>
-      {accountOpen && (
-        <AccountDialog
-          user={user}
-          onClose={() => setAccountOpen(false)}
-          onChanged={(username) => {
-            const next = { ...user, username };
-            userRef.current = next;
-            setUser(next);
-          }}
-        />
-      )}
     </div>
   );
 }

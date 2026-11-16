@@ -2,7 +2,7 @@ export type Gender = 'boy' | 'girl';
 export type HairStyle = 'short' | 'buzz' | 'curly' | 'bob' | 'ponytail' | 'buns';
 export type FaceShape = 'round' | 'oval';
 export type SkinTone = 'light' | 'tan' | 'deep';
-export type Outfit = 'tee' | 'hoodie' | 'overalls';
+export type Outfit = 'tee' | 'hoodie' | 'overalls' | 'blouse' | 'dress' | 'pinafore';
 export type ItemSlot = 'hat' | 'face' | 'neck' | 'background' | 'pin';
 
 export interface AvatarConfig {
@@ -60,11 +60,18 @@ export const SKIN_OPTIONS: { id: SkinTone; label: string; color: string }[] = [
   { id: 'deep', label: '深色', color: '#9a6440' },
 ];
 
-export const OUTFIT_OPTIONS: { id: Outfit; label: string; color: string }[] = [
-  { id: 'tee', label: '短袖', color: '#6fa24a' },
-  { id: 'hoodie', label: '连帽衫', color: '#e8a118' },
-  { id: 'overalls', label: '背带裤', color: '#5b8fb9' },
-];
+export const OUTFIT_OPTIONS: Record<Gender, { id: Outfit; label: string; color: string }[]> = {
+  boy: [
+    { id: 'tee', label: '短袖', color: '#5e9b4e' },
+    { id: 'hoodie', label: '连帽衫', color: '#e8a118' },
+    { id: 'overalls', label: '背带裤', color: '#4f7fa8' },
+  ],
+  girl: [
+    { id: 'blouse', label: '衬衫', color: '#e58a9a' },
+    { id: 'dress', label: '连衣裙', color: '#d97a9a' },
+    { id: 'pinafore', label: '背带裙', color: '#7a9bc4' },
+  ],
+};
 
 export const SHOP_ITEMS: ShopItem[] = [
   {
@@ -116,7 +123,9 @@ const HAIR_IDS = new Set(
 );
 const FACE_IDS = new Set(FACE_OPTIONS.map((item) => item.id));
 const SKIN_IDS = new Set(SKIN_OPTIONS.map((item) => item.id));
-const OUTFIT_IDS = new Set(OUTFIT_OPTIONS.map((item) => item.id));
+const OUTFIT_IDS = new Set(
+  Object.values(OUTFIT_OPTIONS).flatMap((list) => list.map((item) => item.id)),
+);
 const SLOT_IDS = new Set<ItemSlot>(['hat', 'face', 'neck', 'background', 'pin']);
 
 export function itemById(id: string): ShopItem | undefined {
