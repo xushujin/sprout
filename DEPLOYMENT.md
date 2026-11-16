@@ -185,3 +185,10 @@
 - 星榜新增“本周星榜 / 总排行榜”切换：本周榜为本学习周净积分，总榜为当前成长积分；Cron 额外写 `leaderboard:all`，读取仍只走 KV。手动重建了总榜快照（3 条）。
 - Worker 版本 `cff66de1-bd63-4f50-b761-5d66cc0b864d`，Cron `*/30 * * * *` 保持。Pages 部署 `1b815f2e`。
 - 验证通过：27 条单元 / 集成测试（管理员改账号、旧会话撤销、学生无权、重名 409；总榜用例）、TypeScript、Prettier、生产构建；线上确认总榜 3 条、首页无自助改账号入口、形象页与后台“修改账号”表单正常。
+
+2026-11-16 手机端退出按钮修复：
+
+- 修复 H5 / 手机端登录后看不到退出按钮：退出按钮此前被包在 `.profile-actions` 容器里，移动端 `.profile > div { display: none; }` 把整个容器隐藏了。
+- 退出按钮改为 `.profile` 的直接子元素；手机端显示图标 + “退出”文字，桌面 / 平板仍为图标按钮。
+- Pages 部署 `b9380ef9`，预览地址 `https://b9380ef9.wordsprout-5ud.pages.dev`，正式域名仍为 `https://wordsprout.hatim.eu.org`；Worker 未改动。
+- 验证通过：手机 390×844 实际浏览器确认“退出”可见，桌面仍为图标；TypeScript、Prettier、生产构建。

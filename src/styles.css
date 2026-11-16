@@ -471,14 +471,8 @@ input[type='checkbox']:focus-visible {
   margin-left: auto;
   width: 30px;
 }
-.profile-actions {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-.profile-actions button {
-  margin-left: 0;
+.profile-logout span {
+  display: none;
 }
 .content-shell {
   margin-left: 242px;
@@ -1738,6 +1732,15 @@ td small {
     width: 36px;
     height: 36px;
     background: #f1f4e8;
+  }
+  .profile .profile-logout {
+    width: auto;
+    padding: 0 11px;
+    gap: 5px;
+    font-size: 11px;
+  }
+  .profile .profile-logout span {
+    display: inline;
   }
   .side-nav {
     grid-column: 1/-1;

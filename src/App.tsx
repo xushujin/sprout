@@ -191,16 +191,15 @@ export function App() {
               <strong>{user.display_name}</strong>
               <span>{user.role === 'admin' ? '小芽管理员' : '小小探索家'}</span>
             </div>
-            <div className="profile-actions">
-              <button
-                className="icon-button"
-                onClick={() => void logout()}
-                disabled={logoutBusy || activeRound || sync === 'syncing'}
-                aria-label="退出登录"
-              >
-                <Icon name="logout" size={19} />
-              </button>
-            </div>
+            <button
+              className="icon-button profile-logout"
+              onClick={() => void logout()}
+              disabled={logoutBusy || activeRound || sync === 'syncing'}
+              aria-label="退出登录"
+            >
+              <Icon name="logout" size={19} />
+              <span>退出</span>
+            </button>
           </div>
         </div>
       </aside>
