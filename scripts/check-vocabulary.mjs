@@ -77,13 +77,14 @@ for (const path of [
 ])
   assert.ok(!existsSync(path), `retired source restored: ${path}`);
 assert.ok(existsSync('public/404.html'), 'Removed assets must be real 404 responses on Pages.');
-for (const shell of ['admin/index.html', 'leaderboard/index.html'])
+for (const shell of ['admin/index.html', 'leaderboard/index.html', 'profile/index.html'])
   assert.ok(existsSync(shell), `Page route shell missing: ${shell}`);
 assert.ok(!existsSync('public/_redirects'), 'Removed paths must not use a broad Pages fallback.');
 if (process.argv.includes('--dist')) {
   assert.ok(existsSync('dist/404.html'));
   assert.ok(existsSync('dist/admin/index.html'));
   assert.ok(existsSync('dist/leaderboard/index.html'));
+  assert.ok(existsSync('dist/profile/index.html'));
   assert.ok(!existsSync('dist/vocabulary/fltrp'));
   for (const file of readdirSync('dist/audio').filter((name) => name.endsWith('.mp3')))
     assert.ok(approved.has(file.slice(0, -4)), `unapproved built MP3: ${file}`);

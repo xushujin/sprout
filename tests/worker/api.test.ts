@@ -78,6 +78,7 @@ beforeAll(async () => {
 });
 beforeEach(async () => {
   await env.DB.batch([
+    env.DB.prepare('DELETE FROM spend_events'),
     env.DB.prepare('DELETE FROM score_events'),
     env.DB.prepare('DELETE FROM sessions'),
     env.DB.prepare('DELETE FROM users'),
@@ -337,6 +338,96 @@ describe('sessions and access control', () => {
       'PATCH',
     );
     expect(taken.status).toBe(409);
+  });
+});
+
+describe('avatar and shop', () => {
+  it('saves a valid avatar but refuses decorations that are not owned', async () => {
+    const auth = await login();
+    const avatar = {
+      gender: 'girl',
+      hair: 'bob',
+      face: 'round',
+      skin: 'tan',
+      outfit: 'hoodie',
+      items: {},
+    };
+    const saved = await request('/me/avatar', { avatar }, auth.cookie, undefined, 'PATCH');
+    expect(saved.status).toBe(200);
+
+    const notOwned = await request(
+      '/me/avatar',
+      { avatar: { ...avatar, items: { hat: 'straw_hat' } } },
+      auth.cookie,
+      undefined,
+      'PATCH',
+    );
+    expect(notOwned.status).toBe(403);
+
+    const invalid = await request(
+      '/me/avatar',
+      { avatar: { ...avatar, skin: 'blue' } },
+      auth.cookie,
+      undefined,
+      'PATCH',
+    );
+    expect(invalid.status).toBe(422);
+  });
+
+  it('buys a decoration once, deducts points and records the spend', async () => {
+    const auth = await login();
+    await env.DB.prepare('UPDATE users SET lifetime_points = 500 WHERE id = ?')
+      .bind(studentId)
+      .run();
+    const bought = await request('/shop/purchase', { item_id: 'straw_hat' }, auth.cookie);
+    expect(bought.status).toBe(200);
+    const body = (await bought.json()) as { points: number; owned_items: string[] };
+    expect(body.points).toBe(380);
+    expect(body.owned_items).toContain('straw_hat');
+
+    const account = await env.DB.prepare('SELECT lifetime_points FROM users WHERE id = ?')
+      .bind(studentId)
+      .first<{ lifetime_points: number }>();
+    expect(account?.lifetime_points).toBe(380);
+    const spend = await env.DB.prepare('SELECT item_id, amount FROM spend_events WHERE user_id = ?')
+      .bind(studentId)
+      .all();
+    expect(spend.results).toEqual([{ item_id: 'straw_hat', amount: 120 }]);
+
+    const again = await request('/shop/purchase', { item_id: 'straw_hat' }, auth.cookie);
+    expect(again.status).toBe(409);
+
+    await env.DB.prepare('UPDATE users SET lifetime_points = 50 WHERE id = ?')
+      .bind(studentId)
+      .run();
+    const poor = await request('/shop/purchase', { item_id: 'crown' }, auth.cookie);
+    expect(poor.status).toBe(402);
+    const still = await env.DB.prepare('SELECT lifetime_points FROM users WHERE id = ?')
+      .bind(studentId)
+      .first<{ lifetime_points: number }>();
+    expect(still?.lifetime_points).toBe(50);
+  });
+
+  it('subtracts this week’s spends from the leaderboard and keeps the stage points current', async () => {
+    const auth = await login();
+    await request('/scores', score({ id: 'week-round-0001' }), auth.cookie);
+    await env.DB.prepare('UPDATE users SET lifetime_points = 500 WHERE id = ?')
+      .bind(studentId)
+      .run();
+    await request('/shop/purchase', { item_id: 'straw_hat' }, auth.cookie);
+
+    const context = createExecutionContext();
+    await worker.scheduled(
+      createScheduledController({ scheduledTime: Date.now(), cron: '*/30 * * * *' }),
+      env,
+      context,
+    );
+    await waitOnExecutionContext(context);
+    const snapshot = (await (await request('/leaderboard')).json()) as {
+      entries: { points: number; lifetime_points: number; rounds: number }[];
+    };
+    // 45 earned this week minus a 120 spend clamps to 0; lifetime is 500 - 120.
+    expect(snapshot.entries[0]).toMatchObject({ points: 0, rounds: 1, lifetime_points: 380 });
   });
 });
 

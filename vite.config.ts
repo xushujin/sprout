@@ -10,6 +10,7 @@ export default defineConfig({
         main: resolve('index.html'),
         admin: resolve('admin/index.html'),
         leaderboard: resolve('leaderboard/index.html'),
+        profile: resolve('profile/index.html'),
       },
     },
   },

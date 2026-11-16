@@ -28,11 +28,12 @@ flowchart LR
 - 首页另有 WordSprout 自主编排的“幼小衔接”路线：英语启蒙与问候、颜色与大小、数字与数量、课堂与书包、我的身边共 5 个主题，每主题 10 项。题目复用已核验的 600 词和静态 MP3，不复制外部教材内容，也不增加音频、Worker、D1 或 KV 资源。主题内每轮 5 项、15 秒听音选意思，进度和补错池按主题保存在本机；完成后仍只批量提交一次积分事件。
 - 年级与难度词库之间共享逐词进度；幼小衔接按主题单独记录，以免不同场景下的学习记录互相覆盖。每轮错词优先；答对 10 分，补错成功额外 5 分；未完成轮次不切换词库。
 - 学习积分同时养一株向日葵：种子 0 / 发芽 30 / 幼苗 250 / 花苞 750 / 开花 1500 / 盛放 3000 / 结籽 6000 分，共七段形态。结籽按 600 个词各见一次的全词库旅程标定（约 110–120 轮、550–600 次答题），前期仍保持第一轮发芽的即时反馈。七段形态使用预渲染水彩插画（`public/sunflower/`），48px 星榜头像使用单独裁切；阶段由本机累计积分实时推导，不新增存储字段、Worker 路由、D1 或 KV 请求；调整阈值会自动重新分级既有植物。答错不会枯萎或降级，只有累积。每轮答题的反馈区另有一株五题小芽：答对一题长一片叶子，答错仍会长高，五题全对才开花；它只反映本轮，不单独存储。植物随本机进度保存，换设备或清缓存会从种子重新开始。
+- 学生可以在“我的形象”里选择性别、3 种发型、2 种脸型、3 种肤色和 3 种基础服饰，并用积分购买 6 件装饰。购买会同时扣当前成长积分和本周净积分，向日葵可能退回上一阶段，购买前有明确确认；形象只在家里、侧栏和“我的形象”页展示，星榜仍用向日葵阶段。
 - 点击开始后播放浏览器本地生成的节奏背景音乐，最后 5 秒加速；答对为上行提示音，答错 / 超时为下行提示音，整轮完成有收获音效。音乐与音效可分别关闭，设置保存在当前账号的本地进度中；单词 MP3 仍可独立播放，发音时背景自动降低音量。
 - 学习页和结果页都有“返回首页”。未完成轮次需要确认，弹窗期间暂停倒计时与声音；确认返回会丢弃本轮，已完成的积分和待同步队列保留。页面进入后台时暂停声音和计时，回到学习页后继续；卸载或返回首页时取消全部声音调度。无需额外音频请求或 Cloudflare 配额。
 - 完成整轮才保存本地记录与 outbox，再 POST 一次。服务端验证计数和积分公式，使用 `(user_id, id)` 唯一键去重，不接受客户端指定记分账号。
 - 登录、完成一轮、网络恢复或手动重试时同步，每次最多发送 5 个待同步轮次。失败退避 1–30 分钟，无后台轮询；401/账号切换时保留队列并提示重新登录。
-- 周榜按**北京时间周一 00:00**划周，Cron 每 30 分钟写 KV，保留 8 天。读取榜单绝不回源 D1 聚合，榜单只公开昵称、积分、轮次、累计积分与对应的向日葵阶段，不公开账号与用户 ID。累计积分在每次记分时以同一事务的 UPDATE 维护，榜单只读一列，不对历史事件做全表求和。
+- 周榜按**北京时间周一 00:00**划周，Cron 每 30 分钟写 KV，保留 8 天。读取榜单绝不回源 D1 聚合，榜单只公开昵称、净积分、轮次、当前成长积分与对应的向日葵阶段，不公开账号与用户 ID。周榜积分为本周学习获得减去本周装饰消费（不为负）；`lifetime_points` 在记分和购买时以同一事务的 UPDATE 维护，榜单只读该列，不对历史事件做全表求和。
 
 ## 目录
 
@@ -43,6 +44,7 @@ src/
   pages/Learn.tsx            # 5 词学习、计时选图、反馈与积分
   pages/Leaderboard.tsx      # KV 快照与每人向日葵阶段展示
   pages/Admin.tsx            # 建号、密码重置、累计 / 本周数据
+  pages/Profile.tsx          # 用户形象、装饰商店与积分消费
   data/words.ts              # 首批 20 个基础词与稳定 ID
   data/curriculum-words.ts   # 600 词、课标参考与累计分级
   data/general-words.ts      # 对外导出课程词库
@@ -58,12 +60,15 @@ src/
   components/BookPicker.tsx  # 选择年级 / 难度 / 幼小衔接主题
   components/SoundControls.tsx # 音乐 / 音效开关
   components/Sunflower.tsx   # 向日葵七阶段插画（预渲染 WebP）与答题小芽
+  components/UserAvatar.tsx  # 分层 SVG 用户形象
+  components/AccountDialog.tsx # 修改登录账号名
   styles.css                 # 手机 / 桌面布局
 worker/
   index.ts                   # API 路由与 Cron
   env.d.ts                   # D1 / KV / Rate Limit / 可选 R2 绑定
 shared/
   types.ts                   # 前后端数据结构
+  avatar.ts                  # 形象选项、装饰目录与校验
   time.ts                    # 北京时间周边界
   password.ts                # 浏览器 / seed 的密码拉伸
   crypto.ts                  # Worker 随机盐哈希、会话 token 哈希
@@ -80,7 +85,7 @@ public/vocabulary/credits.html # 保留内容与使用条件说明
 public/404.html              # 已移除内容不再返回 SPA 或词表
 public/sunflower/            # 7 个成长阶段插画与 48px 星榜头像（WebP）
 docs/content-audit/          # 来源核对、删除清单、历史部署清理记录
-schema.sql                   # 三张表、累计积分列及索引，可重复初始化
+schema.sql                   # 四张表（users / sessions / score_events / spend_events）、形象与积分列及索引
 wrangler.toml                # D1、KV、限流、Cron、可选 R2
 ```
 
@@ -141,6 +146,8 @@ Workers Free 每请求仅有 10 ms CPU，不能假设高迭代 PBKDF2 会被 `as
 | POST  | `/api/logout`                      | `{}`，删除会话、清 Cookie                                                      |
 | GET   | `/api/me`                          | 当前用户；未登录返回 401                                                       |
 | PATCH | `/api/me/username`                 | `{ username, current_password_proof, new_password_proof }`；改名并重算密码凭据 |
+| PATCH | `/api/me/avatar`                   | `{ avatar }`；校验基础选项和已购买装饰                                         |
+| POST  | `/api/shop/purchase`               | `{ item_id }`；扣积分、写 `spend_events`，返回新积分与已拥有列表               |
 | POST  | `/api/scores`                      | 学生整轮事件，返回 `{ ok, accepted, points_earned }`；重复时 `accepted=false`  |
 | GET   | `/api/leaderboard`                 | 仅读 KV，含 `lifetime_points`；无本周快照时返回空榜                            |
 | POST  | `/api/admin/students`              | `{ username, display_name, password_proof }`；只能创建学生                     |
@@ -195,7 +202,7 @@ Workers Free 每请求仅有 10 ms CPU，不能假设高迭代 PBKDF2 会被 `as
    npm run deploy:web
    ```
 
-   也可使用 Pages Git 集成：构建命令 `npm run build`，输出目录 `dist`，Node 24。纯静态部署不需要 Pages Functions；所有前端资源由 Pages 直接提供。`admin/index.html` 与 `leaderboard/index.html` 是独立的 Vite 入口，直接访问和刷新不依赖重定向；提供 `public/404.html`，确保已删除词表和音频的地址真实返回 404，不能加回全路径 SPA 回退。
+   也可使用 Pages Git 集成：构建命令 `npm run build`，输出目录 `dist`，Node 24。纯静态部署不需要 Pages Functions；所有前端资源由 Pages 直接提供。`admin/index.html`、`leaderboard/index.html` 与 `profile/index.html` 是独立的 Vite 入口，直接访问和刷新不依赖重定向；提供 `public/404.html`，确保已删除词表和音频的地址真实返回 404，不能加回全路径 SPA 回退。
 
 4. 初始化远端数据库并发布 API：
 
@@ -248,13 +255,13 @@ npx wrangler r2 object put wordsprout-audio/apple.mp3 --file ./audio/apple.mp3 -
 
 以下为 2026-11-09 核对的公开标准额度，部署时以 Cloudflare 当前页面和账号仪表盘为准。额度通常按**整个账号**共享，并非项目独享。
 
-| 服务         | 免费额度要点                                                 | 本项目行为                                                        |
-| ------------ | ------------------------------------------------------------ | ----------------------------------------------------------------- |
-| Workers Free | 100,000 请求 / 天；10 ms CPU / 请求                          | 静态资源不走 Worker；浏览器承担密码拉伸、选题和学习计算           |
-| D1 Free      | 5,000,000 行读 / 天；100,000 行写 / 天；总 5 GB；单库 500 MB | 每轮一次 INSERT + 一次累计积分 UPDATE；登录才写会话；按周索引聚合 |
-| KV Free      | 100,000 读 / 天；1,000 写 / 天；1 GB                         | 每天 48 次快照写；榜单每次打开读取一次；不轮询                    |
-| Pages Free   | 静态请求免费；Git 构建 500 次 / 月                           | Vite 输出纯静态文件；不启用付费构建功能                           |
-| R2 Standard  | 10 GB-month；A 类 100 万 / 月；B 类 1,000 万 / 月            | 默认不启用；超出可能计费，不能保证拒绝请求                        |
+| 服务         | 免费额度要点                                                 | 本项目行为                                                                                        |
+| ------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Workers Free | 100,000 请求 / 天；10 ms CPU / 请求                          | 静态资源不走 Worker；浏览器承担密码拉伸、选题和学习计算                                           |
+| D1 Free      | 5,000,000 行读 / 天；100,000 行写 / 天；总 5 GB；单库 500 MB | 每轮一次 INSERT + 一次累计积分 UPDATE；购买时一次 UPDATE + 一次 spend_events INSERT；登录才写会话 |
+| KV Free      | 100,000 读 / 天；1,000 写 / 天；1 GB                         | 每天 48 次快照写；榜单每次打开读取一次；不轮询                                                    |
+| Pages Free   | 静态请求免费；Git 构建 500 次 / 月                           | Vite 输出纯静态文件；不启用付费构建功能                                                           |
+| R2 Standard  | 10 GB-month；A 类 100 万 / 月；B 类 1,000 万 / 月            | 默认不启用；超出可能计费，不能保证拒绝请求                                                        |
 
 Cron 一天运行 48 次。设每周最多有 `E` 条事件，则日期索引的周范围每次需要访问约 `E` 条事件，日访问量量级为 `48 × E`，还要计入索引、用户 JOIN、登录和管理请求；**不要把一次聚合算作只读一行**。D1 的 `rows_read/rows_written` 才是实际依据，索引更新也可能计入写入量。
 

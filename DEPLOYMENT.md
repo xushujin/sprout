@@ -166,3 +166,14 @@
 - Worker 版本 `98f5b592-48d1-4b8f-8fd2-249794716e70` 已发布，Cron `*/30 * * * *` 保持。Pages 最终部署 `d790a10d`，预览地址 `https://d790a10d.wordsprout-5ud.pages.dev`。
 - 验证通过：24 条单元 / 集成测试（新增“本周为空仍显示累计”和“改名后可用新账号登录”用例）、TypeScript、Prettier、生产构建。线上确认账号弹窗和资源指纹。
 - 未改 D1 schema、KV、生产账号和会话；后台累计查询只在管理员打开页面时读取 D1，不增加 Cron 或 KV 请求。
+
+2026-11-16 用户形象与装饰商店：
+
+- 新增“我的形象”页（`/profile`，独立 Vite 入口）：2 性别、3 发型（按性别）、2 脸型、3 肤色、3 基础服饰；分层 SVG 渲染，无外部图片。
+- 装饰商店 6 件：小草帽 120、圆眼镜 80、红围巾 100、小皇冠 300、星星背景 200、向日葵胸针 150。购买前弹窗明确提示“会扣积分，向日葵可能退回上一阶段，本周星榜排名也会下降”。
+- 数据模型：`users` 新增 `avatar TEXT`、`owned_items TEXT NOT NULL DEFAULT '[]'`；新增 `spend_events` 表及索引。迁移前备份 `.wrangler/d1-backup-2026-11-16.sql`。
+- 购买在单个 D1 batch 中执行条件 UPDATE + `changes()` 守卫的 `spend_events` INSERT；积分不足返回 402，重复购买返回 409，不会扣成负数。
+- 周榜积分改为“本周学习获得 - 本周装饰消费（不为负）”；`lifetime_points` 在购买时同步扣减，向日葵阶段可能下降，符合产品选择。榜单仍展示向日葵阶段，形象只在家里、侧栏和“我的形象”页展示。
+- 后台学生列表的“积分”改为当前可用积分，`earned_points` 保留累计获得；本周 +Y 仍为本周学习获得。
+- Worker 版本 `b3eeda12-89f2-441e-9f2d-cd22e9684ed8`，Cron `*/30 * * * *` 保持。Pages 部署 `8bc4db01`，预览地址 `https://8bc4db01.wordsprout-5ud.pages.dev`。
+- 验证通过：27 条单元 / 集成测试（新增形象校验、购买扣分 / 防重复 / 防负数、榜单净积分 3 条）、TypeScript、Prettier、生产构建；线上确认 `/api/me` 与 `/api/shop/purchase` 未登录返回 401，`/profile` 形象页加载 6 件商品。

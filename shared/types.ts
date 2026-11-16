@@ -1,8 +1,13 @@
+import type { AvatarConfig } from './avatar';
+
 export interface User {
   id: string;
   username: string;
   display_name: string;
   role: 'admin' | 'student';
+  points?: number;
+  avatar?: AvatarConfig | null;
+  owned_items?: string[];
 }
 
 export interface ScoreEvent {
@@ -35,6 +40,7 @@ export interface Student extends User {
   correct_count: number;
   total_count: number;
   points: number;
+  earned_points: number;
   week_rounds: number;
   week_points: number;
   last_active: number | null;

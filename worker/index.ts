@@ -2,6 +2,7 @@ import type { Env } from './env';
 import type { User, Student } from '../shared/types';
 import { hashPassword, hashToken, newToken, verifyPassword, DUMMY_HASH } from '../shared/crypto';
 import { schoolWeek } from '../shared/time';
+import { isAvatarConfig, itemById, parseAvatar, parseOwned } from '../shared/avatar';
 
 const SESSION_COOKIE = '__Host-ws_session';
 const STUDENT_SESSION_SECONDS = 30 * 86400;
@@ -124,13 +125,22 @@ async function currentUser(request: Request, env: Env): Promise<User | null> {
   if (!token || !/^[0-9a-f]{64}$/.test(token)) return null;
   const tokenHash = await hashToken(token);
   const row = await env.DB.prepare(
-    `SELECT u.id, u.username, u.display_name, u.role
+    `SELECT u.id, u.username, u.display_name, u.role, u.lifetime_points AS points, u.avatar, u.owned_items
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = ? AND s.expires_at > ?`,
   )
     .bind(tokenHash, Math.floor(Date.now() / 1000))
-    .first<User>();
-  return row ?? null;
+    .first<User & { points: number; avatar: string | null; owned_items: string }>();
+  if (!row) return null;
+  return {
+    id: row.id,
+    username: row.username,
+    display_name: row.display_name,
+    role: row.role,
+    points: Number(row.points),
+    avatar: parseAvatar(row.avatar),
+    owned_items: parseOwned(row.owned_items),
+  };
 }
 
 async function requireUser(request: Request, env: Env, role?: User['role']) {
@@ -183,6 +193,70 @@ async function changeUsername(request: Request, env: Env) {
   return json({ ok: true, username });
 }
 
+async function saveAvatar(request: Request, env: Env) {
+  const auth = await requireUser(request, env);
+  if ('response' in auth) return auth.response;
+  if (!(await rateLimit(env.WRITE_LIMITER, auth.user.id)))
+    return error('操作太频繁，请稍后再试。', 429);
+  let input: Record<string, unknown>;
+  try {
+    input = await body(request);
+  } catch {
+    return error('请求格式不正确。', 400);
+  }
+  if (!isAvatarConfig(input.avatar)) return error('形象配置不正确。', 422);
+  const owned = auth.user.owned_items ?? [];
+  for (const item of Object.values(input.avatar.items)) {
+    if (item && !owned.includes(item)) return error('还没有购买这件装饰。', 403, 'ITEM_NOT_OWNED');
+  }
+  await env.DB.prepare('UPDATE users SET avatar = ? WHERE id = ?')
+    .bind(JSON.stringify(input.avatar), auth.user.id)
+    .run();
+  return json({ ok: true, avatar: input.avatar });
+}
+
+async function purchase(request: Request, env: Env) {
+  const auth = await requireUser(request, env);
+  if ('response' in auth) return auth.response;
+  if (!(await rateLimit(env.WRITE_LIMITER, auth.user.id)))
+    return error('操作太频繁，请稍后再试。', 429);
+  let input: Record<string, unknown>;
+  try {
+    input = await body(request);
+  } catch {
+    return error('请求格式不正确。', 400);
+  }
+  const itemId = typeof input.item_id === 'string' ? input.item_id : '';
+  const item = itemById(itemId);
+  if (!item) return error('没有这件装饰。', 404, 'ITEM_NOT_FOUND');
+  const owned = auth.user.owned_items ?? [];
+  if (owned.includes(item.id)) return error('已经拥有这件装饰。', 409, 'ALREADY_OWNED');
+  const nextOwned = [...owned, item.id];
+  const now = Math.floor(Date.now() / 1000);
+  // Conditional update + guarded spend insert in one transaction. If the
+  // balance is too low the update changes 0 rows and changes() suppresses the
+  // spend row, so the purchase cannot go negative.
+  const [updated] = await env.DB.batch([
+    env.DB.prepare(
+      'UPDATE users SET lifetime_points = lifetime_points - ?, owned_items = ? WHERE id = ? AND lifetime_points >= ?',
+    ).bind(item.price, JSON.stringify(nextOwned), auth.user.id, item.price),
+    env.DB.prepare(
+      'INSERT INTO spend_events(id, user_id, item_id, amount, created_at) SELECT ?, ?, ?, ?, ? WHERE changes() = 1',
+    ).bind(crypto.randomUUID(), auth.user.id, item.id, item.price, now),
+  ]);
+  if (updated.meta.changes !== 1)
+    return error('积分不够，再攒一攒吧。', 402, 'INSUFFICIENT_POINTS');
+  const account = await env.DB.prepare('SELECT lifetime_points AS points FROM users WHERE id = ?')
+    .bind(auth.user.id)
+    .first<{ points: number }>();
+  return json({
+    ok: true,
+    item: item.id,
+    points: Number(account?.points ?? 0),
+    owned_items: nextOwned,
+  });
+}
+
 async function login(request: Request, env: Env) {
   let input: Record<string, unknown>;
   try {
@@ -204,10 +278,17 @@ async function login(request: Request, env: Env) {
 
   const user = validUsername(username)
     ? await env.DB.prepare(
-        'SELECT id, username, display_name, role, password_hash FROM users WHERE username = ? COLLATE NOCASE',
+        'SELECT id, username, display_name, role, password_hash, lifetime_points AS points, avatar, owned_items FROM users WHERE username = ? COLLATE NOCASE',
       )
         .bind(username)
-        .first<User & { password_hash: string }>()
+        .first<
+          User & {
+            password_hash: string;
+            points: number;
+            avatar: string | null;
+            owned_items: string;
+          }
+        >()
     : null;
   const passwordHash = user?.password_hash ?? DUMMY_HASH;
   const passwordOk = await verifyPassword(password, passwordHash, env.PASSWORD_PEPPER);
@@ -237,6 +318,9 @@ async function login(request: Request, env: Env) {
     username: user.username,
     display_name: user.display_name,
     role: user.role,
+    points: Number(user.points),
+    avatar: parseAvatar(user.avatar),
+    owned_items: parseOwned(user.owned_items),
   };
   return json({ user: safeUser }, 200, { 'Set-Cookie': cookie(rawToken, lifetime) });
 }
@@ -458,7 +542,7 @@ async function listStudents(request: Request, env: Env) {
       COALESCE(SUM(e.words_reviewed), 0) AS words_reviewed,
       COALESCE(SUM(e.correct_count), 0) AS correct_count,
       COALESCE(SUM(e.total_count), 0) AS total_count,
-      COALESCE(SUM(e.points_earned), 0) AS points,
+      COALESCE(SUM(e.points_earned), 0) AS earned_points,
       MAX(e.created_at) AS last_active
     FROM score_events e
     WHERE e.user_id IN (SELECT id FROM selected)
@@ -476,7 +560,8 @@ async function listStudents(request: Request, env: Env) {
     COALESCE(t.words_reviewed, 0) AS words_reviewed,
     COALESCE(t.correct_count, 0) AS correct_count,
     COALESCE(t.total_count, 0) AS total_count,
-    COALESCE(t.points, 0) AS points,
+    COALESCE(u.lifetime_points, 0) AS points,
+    COALESCE(t.earned_points, 0) AS earned_points,
     COALESCE(w.week_rounds, 0) AS week_rounds,
     COALESCE(w.week_points, 0) AS week_points,
     t.last_active
@@ -498,12 +583,19 @@ async function listStudents(request: Request, env: Env) {
 export async function generateLeaderboard(env: Env, scheduledTime = Date.now()) {
   const week = schoolWeek(scheduledTime);
   const rows = await env.DB.prepare(
-    `SELECT u.display_name, u.lifetime_points, COALESCE(SUM(e.points_earned), 0) AS points, COUNT(e.id) AS rounds
+    `WITH spent AS (
+      SELECT user_id, SUM(amount) AS amount FROM spend_events
+      WHERE created_at >= ? AND created_at < ? GROUP BY user_id
+    )
+    SELECT u.display_name, u.lifetime_points,
+      MAX(COALESCE(SUM(e.points_earned), 0) - COALESCE(s.amount, 0), 0) AS points,
+      COUNT(e.id) AS rounds
     FROM score_events e JOIN users u ON u.id = e.user_id
+    LEFT JOIN spent s ON s.user_id = u.id
     WHERE u.role = 'student' AND e.created_at >= ? AND e.created_at < ?
     GROUP BY u.id ORDER BY points DESC, rounds DESC, u.display_name COLLATE NOCASE ASC LIMIT 100`,
   )
-    .bind(week.start, week.end)
+    .bind(week.start, week.end, week.start, week.end)
     .all<{ display_name: string; lifetime_points: number; points: number; rounds: number }>();
   const snapshot = {
     week_start: week.key,
@@ -533,6 +625,8 @@ async function route({ request, env }: Context) {
     return user ? json({ user }) : error('请先登录。', 401, 'UNAUTHENTICATED');
   }
   if (request.method === 'PATCH' && path === '/me/username') return changeUsername(request, env);
+  if (request.method === 'PATCH' && path === '/me/avatar') return saveAvatar(request, env);
+  if (request.method === 'POST' && path === '/shop/purchase') return purchase(request, env);
   if (request.method === 'POST' && path === '/login') return login(request, env);
   if (request.method === 'POST' && path === '/logout') return logout(request, env);
   if (request.method === 'POST' && path === '/scores') return submitScore(request, env);

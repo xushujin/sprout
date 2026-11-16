@@ -1,22 +1,32 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { User } from '../shared/types';
 import { api } from './lib/api';
-import { emptyProgress, lastUsername, readProgress, storageIsDurable } from './lib/progress';
+import {
+  emptyProgress,
+  lastUsername,
+  readProgress,
+  spendPoints,
+  storageIsDurable,
+} from './lib/progress';
 import { syncProgress, type SyncStatus } from './lib/sync';
 import { Icon } from './components/Icons';
 import { AccountDialog } from './components/AccountDialog';
+import { UserAvatar } from './components/UserAvatar';
 import { Login } from './pages/Login';
 import { Learn } from './pages/Learn';
 import { Leaderboard } from './pages/Leaderboard';
 import { Admin } from './pages/Admin';
+import { Profile } from './pages/Profile';
 
-type Page = 'learn' | 'leaderboard' | 'admin';
+type Page = 'learn' | 'leaderboard' | 'admin' | 'profile';
 function pageFromPath(): Page {
   return location.pathname.startsWith('/admin')
     ? 'admin'
     : location.pathname === '/leaderboard' || location.pathname === '/leaderboard/'
       ? 'leaderboard'
-      : 'learn';
+      : location.pathname === '/profile' || location.pathname === '/profile/'
+        ? 'profile'
+        : 'learn';
 }
 
 export function App() {
@@ -59,7 +69,9 @@ export function App() {
     setBootError(false);
     if (next.role === 'student') {
       setProgress(readProgress(next.id));
-      if (page === 'admin' || !auto) navigate('learn');
+      if (page === 'admin') navigate('learn');
+      else if (page === 'learn' && !next.avatar) navigate('profile');
+      else if (!auto) navigate('learn');
       void syncNow();
     } else navigate('admin');
   }
@@ -130,11 +142,12 @@ export function App() {
 
   const nav = [
     { id: 'learn' as const, label: '我的花园', icon: 'sprout' as const },
+    { id: 'profile' as const, label: '我的形象', icon: 'user' as const },
     { id: 'leaderboard' as const, label: '成长星榜', icon: 'cup' as const },
   ];
   const items =
     user.role === 'admin'
-      ? [{ id: 'admin' as const, label: '老师的花园', icon: 'shield' as const }, nav[1]]
+      ? [{ id: 'admin' as const, label: '老师的花园', icon: 'shield' as const }, nav[2]]
       : nav;
   return (
     <div className="app-shell">
@@ -173,7 +186,9 @@ export function App() {
             </p>
           </div>
           <div className="profile">
-            <span className="profile-avatar">{user.role === 'admin' ? '🌻' : '🌱'}</span>
+            <span className="profile-avatar">
+              {user.role === 'admin' ? '🌻' : <UserAvatar avatar={user.avatar} size={35} />}
+            </span>
             <div>
               <strong>{user.display_name}</strong>
               <span>{user.role === 'admin' ? '小芽管理员' : '小小探索家'}</span>
@@ -262,6 +277,19 @@ export function App() {
             />
           )}
           {page === 'leaderboard' && <Leaderboard />}
+          {page === 'profile' && user.role === 'student' && (
+            <Profile
+              user={user}
+              onUserChange={(next) => {
+                userRef.current = next;
+                setUser(next);
+              }}
+              onSpend={(amount) => {
+                spendPoints(user.id, amount);
+                refreshProgress();
+              }}
+            />
+          )}
           {page === 'admin' && user.role === 'admin' && <Admin />}
           {activeRound && <p className="local-note">完成这一轮后会保存结果，并可切换页面。</p>}
         </main>

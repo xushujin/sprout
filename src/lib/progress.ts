@@ -63,6 +63,13 @@ export function readProgress(userId: string): Progress {
   }
 }
 
+// Spending reduces the local growth points immediately so the home sunflower
+// reflects the new stage; pending rounds keep their own points until synced.
+export function spendPoints(userId: string, amount: number): Progress {
+  const current = readProgress(userId);
+  return save(userId, { ...current, points: Math.max(0, current.points - amount) });
+}
+
 function save(userId: string, progress: Progress) {
   memory.set(userId, structuredClone(progress));
   try {
