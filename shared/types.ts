@@ -35,5 +35,7 @@ export interface Student extends User {
   correct_count: number;
   total_count: number;
   points: number;
+  week_rounds: number;
+  week_points: number;
   last_active: number | null;
 }

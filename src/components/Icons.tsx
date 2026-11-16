@@ -15,7 +15,8 @@ type Name =
   | 'cloud'
   | 'star'
   | 'refresh'
-  | 'leaf';
+  | 'leaf'
+  | 'user';
 const paths: Record<Name, ReactNode> = {
   sprout: (
     <>
@@ -77,6 +78,12 @@ const paths: Record<Name, ReactNode> = {
   leaf: (
     <>
       <path d="M4 20C-2 8 7 2 21 3c1 13-5 21-17 17ZM4 20 16 8" />
+    </>
+  ),
+  user: (
+    <>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
     </>
   ),
 };

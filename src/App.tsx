@@ -4,6 +4,7 @@ import { api } from './lib/api';
 import { emptyProgress, lastUsername, readProgress, storageIsDurable } from './lib/progress';
 import { syncProgress, type SyncStatus } from './lib/sync';
 import { Icon } from './components/Icons';
+import { AccountDialog } from './components/AccountDialog';
 import { Login } from './pages/Login';
 import { Learn } from './pages/Learn';
 import { Leaderboard } from './pages/Leaderboard';
@@ -28,6 +29,7 @@ export function App() {
   const [sync, setSync] = useState<SyncStatus>('idle');
   const [activeRound, setActiveRound] = useState(false);
   const [logoutBusy, setLogoutBusy] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [message, setMessage] = useState('');
   const progressRef = useRef(progress);
   progressRef.current = progress;
@@ -176,14 +178,24 @@ export function App() {
               <strong>{user.display_name}</strong>
               <span>{user.role === 'admin' ? '小芽管理员' : '小小探索家'}</span>
             </div>
-            <button
-              className="icon-button"
-              onClick={() => void logout()}
-              disabled={logoutBusy || activeRound || sync === 'syncing'}
-              aria-label="退出登录"
-            >
-              <Icon name="logout" size={19} />
-            </button>
+            <div className="profile-actions">
+              <button
+                className="icon-button"
+                onClick={() => setAccountOpen(true)}
+                disabled={activeRound}
+                aria-label="账号设置"
+              >
+                <Icon name="user" size={19} />
+              </button>
+              <button
+                className="icon-button"
+                onClick={() => void logout()}
+                disabled={logoutBusy || activeRound || sync === 'syncing'}
+                aria-label="退出登录"
+              >
+                <Icon name="logout" size={19} />
+              </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -260,6 +272,17 @@ export function App() {
           </a>
         </footer>
       </div>
+      {accountOpen && (
+        <AccountDialog
+          user={user}
+          onClose={() => setAccountOpen(false)}
+          onChanged={(username) => {
+            const next = { ...user, username };
+            userRef.current = next;
+            setUser(next);
+          }}
+        />
+      )}
     </div>
   );
 }

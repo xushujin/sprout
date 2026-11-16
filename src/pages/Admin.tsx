@@ -112,7 +112,7 @@ export function Admin() {
         <div>
           <span className="eyebrow">TEACHER'S CORNER</span>
           <h1>照顾每一颗小芽</h1>
-          <p>管理学生账号，看看本周的小小进步。</p>
+          <p>管理学生账号，看看每颗小芽的累计成长。</p>
         </div>
         <span className="pill pale">
           <Icon name="shield" size={16} /> 管理员
@@ -168,7 +168,7 @@ export function Admin() {
       )}
       <section className="admin-list">
         <div className="section-heading">
-          <h2>学生与本周学习数据</h2>
+          <h2>学生与学习数据</h2>
           <button className="button text-button" disabled={busy} onClick={() => void load()}>
             <Icon name="refresh" size={16} />
             刷新
@@ -220,7 +220,10 @@ export function Admin() {
                       </>
                     )}
                   </td>
-                  <td>{s.rounds}</td>
+                  <td>
+                    {s.rounds}
+                    <small className="cell-note">本周 {s.week_rounds} 轮</small>
+                  </td>
                   <td>
                     {s.words_learned} / {s.words_reviewed}
                   </td>
@@ -229,7 +232,10 @@ export function Admin() {
                       ? `${Math.round((s.correct_count / s.total_count) * 100)}%`
                       : '—'}
                   </td>
-                  <td className="points-cell">{s.points}</td>
+                  <td className="points-cell">
+                    {s.points}
+                    <small className="cell-note">本周 +{s.week_points}</small>
+                  </td>
                   <td>
                     {renameId === s.id ? (
                       <span className="muted">正在修改昵称</span>
@@ -303,8 +309,9 @@ export function Admin() {
           </button>
         )}
         <p className="local-note">
-          数据按北京时间本周汇总，仅包含已同步的完整学习轮次。新学词数为学习事件计数，跨设备可能重复；昵称修改后，排行榜在下次
-          30 分钟快照刷新。
+          完成轮次、新学 / 复习、正确率和积分均为累计值，仅包含已同步的完整学习轮次；本周数据在周一
+          00:00 清零，单独标注。新学词数为学习事件计数，跨设备可能重复；昵称修改后，排行榜在下次 30
+          分钟快照刷新。
         </p>
       </section>
     </div>

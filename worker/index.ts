@@ -141,6 +141,48 @@ async function requireUser(request: Request, env: Env, role?: User['role']) {
   return { user } as const;
 }
 
+async function changeUsername(request: Request, env: Env) {
+  const auth = await requireUser(request, env);
+  if ('response' in auth) return auth.response;
+  if (!(await rateLimit(env.WRITE_LIMITER, auth.user.id)))
+    return error('操作太频繁，请稍后再试。', 429);
+  let input: Record<string, unknown>;
+  try {
+    input = await body(request);
+  } catch {
+    return error('请求格式不正确。', 400);
+  }
+  const username = typeof input.username === 'string' ? input.username.trim() : '';
+  const currentProof = input.current_password_proof;
+  const newProof = input.new_password_proof;
+  if (
+    !validUsername(username) ||
+    !validPasswordProof(currentProof) ||
+    !validPasswordProof(newProof)
+  )
+    return error('账号或密码格式不正确。', 422);
+  const row = await env.DB.prepare('SELECT password_hash FROM users WHERE id = ?')
+    .bind(auth.user.id)
+    .first<{ password_hash: string }>();
+  if (!row || !(await verifyPassword(currentProof, row.password_hash, env.PASSWORD_PEPPER)))
+    return error('当前密码不正确。', 403, 'INVALID_PASSWORD');
+  if (username.toLowerCase() === auth.user.username.toLowerCase())
+    return json({ ok: true, username: auth.user.username });
+  // The login proof is derived from username + password, so the stored hash must
+  // be replaced with the proof for the new name or the account would lock out.
+  const passwordHash = await hashPassword(newProof, env.PASSWORD_PEPPER);
+  try {
+    await env.DB.prepare('UPDATE users SET username = ?, password_hash = ? WHERE id = ?')
+      .bind(username, passwordHash, auth.user.id)
+      .run();
+  } catch (cause) {
+    if (String(cause).toLowerCase().includes('unique'))
+      return error('用户名已经存在。', 409, 'USERNAME_TAKEN');
+    throw cause;
+  }
+  return json({ ok: true, username });
+}
+
 async function login(request: Request, env: Env) {
   let input: Record<string, unknown>;
   try {
@@ -405,17 +447,43 @@ async function listStudents(request: Request, env: Env) {
   const cursor = new URL(request.url).searchParams.get('cursor') ?? '';
   if (cursor && !/^[0-9a-f-]{36}$/i.test(cursor)) return error('分页参数不正确。', 422);
   const week = schoolWeek();
-  // Restrict both the account page and the date range before aggregating.
+  // Totals are all-time so the page is never blank on Monday morning; the
+  // current week is returned alongside for the small secondary line.
   const rows = await env.DB.prepare(
     `WITH selected AS (
     SELECT * FROM users WHERE role = 'student' AND id > ? ORDER BY id LIMIT 51
-  ) SELECT u.id, u.username, u.display_name, u.role, u.created_at,
-    COUNT(e.id) AS rounds, COALESCE(SUM(e.words_learned), 0) AS words_learned,
-    COALESCE(SUM(e.words_reviewed), 0) AS words_reviewed, COALESCE(SUM(e.correct_count), 0) AS correct_count,
-    COALESCE(SUM(e.total_count), 0) AS total_count, COALESCE(SUM(e.points_earned), 0) AS points,
-    MAX(e.created_at) AS last_active
-    FROM selected u LEFT JOIN score_events e ON e.user_id = u.id AND e.created_at >= ? AND e.created_at < ?
-    GROUP BY u.id ORDER BY u.id`,
+  ), totals AS (
+    SELECT e.user_id, COUNT(*) AS rounds,
+      COALESCE(SUM(e.words_learned), 0) AS words_learned,
+      COALESCE(SUM(e.words_reviewed), 0) AS words_reviewed,
+      COALESCE(SUM(e.correct_count), 0) AS correct_count,
+      COALESCE(SUM(e.total_count), 0) AS total_count,
+      COALESCE(SUM(e.points_earned), 0) AS points,
+      MAX(e.created_at) AS last_active
+    FROM score_events e
+    WHERE e.user_id IN (SELECT id FROM selected)
+    GROUP BY e.user_id
+  ), weekly AS (
+    SELECT e.user_id, COUNT(*) AS week_rounds,
+      COALESCE(SUM(e.points_earned), 0) AS week_points
+    FROM score_events e
+    WHERE e.user_id IN (SELECT id FROM selected) AND e.created_at >= ? AND e.created_at < ?
+    GROUP BY e.user_id
+  )
+  SELECT u.id, u.username, u.display_name, u.role, u.created_at,
+    COALESCE(t.rounds, 0) AS rounds,
+    COALESCE(t.words_learned, 0) AS words_learned,
+    COALESCE(t.words_reviewed, 0) AS words_reviewed,
+    COALESCE(t.correct_count, 0) AS correct_count,
+    COALESCE(t.total_count, 0) AS total_count,
+    COALESCE(t.points, 0) AS points,
+    COALESCE(w.week_rounds, 0) AS week_rounds,
+    COALESCE(w.week_points, 0) AS week_points,
+    t.last_active
+    FROM selected u
+    LEFT JOIN totals t ON t.user_id = u.id
+    LEFT JOIN weekly w ON w.user_id = u.id
+    ORDER BY u.id`,
   )
     .bind(cursor, week.start, week.end)
     .all<Student>();
@@ -464,6 +532,7 @@ async function route({ request, env }: Context) {
     const user = await currentUser(request, env);
     return user ? json({ user }) : error('请先登录。', 401, 'UNAUTHENTICATED');
   }
+  if (request.method === 'PATCH' && path === '/me/username') return changeUsername(request, env);
   if (request.method === 'POST' && path === '/login') return login(request, env);
   if (request.method === 'POST' && path === '/logout') return logout(request, env);
   if (request.method === 'POST' && path === '/scores') return submitScore(request, env);

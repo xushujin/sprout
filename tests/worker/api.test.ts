@@ -285,6 +285,59 @@ describe('sessions and access control', () => {
       (await request('/login', { username: 'student01', password_proof: newPassword })).status,
     ).toBe(200);
   });
+  it('changes the login name and keeps the account usable with the new proof', async () => {
+    const auth = await login();
+    const changed = await request(
+      '/me/username',
+      {
+        username: 'student02',
+        current_password_proof: password,
+        new_password_proof: newPassword,
+      },
+      auth.cookie,
+      undefined,
+      'PATCH',
+    );
+    expect(changed.status).toBe(200);
+    expect(await changed.json()).toMatchObject({ ok: true, username: 'student02' });
+
+    // The stored hash must follow the new username, not the old proof.
+    expect(
+      (await request('/login', { username: 'student01', password_proof: password })).status,
+    ).toBe(401);
+    const relogin = await request('/login', {
+      username: 'student02',
+      password_proof: newPassword,
+    });
+    expect(relogin.status).toBe(200);
+    const cookie = relogin.headers.get('Set-Cookie')!.split(';')[0];
+
+    const wrongPassword = await request(
+      '/me/username',
+      {
+        username: 'student03',
+        current_password_proof: password,
+        new_password_proof: password,
+      },
+      cookie,
+      undefined,
+      'PATCH',
+    );
+    expect(wrongPassword.status).toBe(403);
+
+    const taken = await request(
+      '/me/username',
+      {
+        username: 'admin',
+        current_password_proof: newPassword,
+        new_password_proof: password,
+      },
+      cookie,
+      undefined,
+      'PATCH',
+    );
+    expect(taken.status).toBe(409);
+  });
 });
 
 describe('rounds and weekly snapshots', () => {
@@ -317,8 +370,28 @@ describe('rounds and weekly snapshots', () => {
       points: 45,
       words_learned: 3,
       words_reviewed: 2,
+      week_rounds: 1,
+      week_points: 45,
     });
     expect(report.students[0]).not.toHaveProperty('password_hash');
+  });
+
+  it('keeps all-time totals in the admin list when the current week is empty', async () => {
+    const auth = await login();
+    await request('/scores', score({ id: 'last-week-round-01' }), auth.cookie);
+    await env.DB.prepare('UPDATE score_events SET created_at = ? WHERE id = ?')
+      .bind(schoolWeek().start - 1, 'last-week-round-01')
+      .run();
+    const admin = await login('admin');
+    const report = (await (await request('/admin/students', undefined, admin.cookie)).json()) as {
+      students: Record<string, unknown>[];
+    };
+    expect(report.students[0]).toMatchObject({
+      rounds: 1,
+      points: 45,
+      week_rounds: 0,
+      week_points: 0,
+    });
   });
 
   it('rejects fabricated totals, bonuses, partial rounds and queues belonging to another user', async () => {
