@@ -2,7 +2,22 @@ import type { Env } from './env';
 import type { User, Student } from '../shared/types';
 import { hashPassword, hashToken, newToken, verifyPassword, DUMMY_HASH } from '../shared/crypto';
 import { schoolWeek } from '../shared/time';
-import { isAvatarConfig, itemById, parseAvatar, parseOwned } from '../shared/avatar';
+import {
+  isAvatarConfig,
+  itemById,
+  normalizeAvatar,
+  parseAvatar,
+  parseOwned,
+} from '../shared/avatar';
+import {
+  isFreeStyle,
+  isFreeStyleId,
+  isStyleKind,
+  isValidStyle,
+  parseOwnedStyles,
+  styleKey,
+  stylePrice,
+} from '../shared/wardrobe';
 
 const SESSION_COOKIE = '__Host-ws_session';
 const STUDENT_SESSION_SECONDS = 30 * 86400;
@@ -125,12 +140,14 @@ async function currentUser(request: Request, env: Env): Promise<User | null> {
   if (!token || !/^[0-9a-f]{64}$/.test(token)) return null;
   const tokenHash = await hashToken(token);
   const row = await env.DB.prepare(
-    `SELECT u.id, u.username, u.display_name, u.role, u.lifetime_points AS points, u.avatar, u.owned_items
+    `SELECT u.id, u.username, u.display_name, u.role, u.lifetime_points AS points, u.avatar, u.owned_items, u.owned_styles
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = ? AND s.expires_at > ?`,
   )
     .bind(tokenHash, Math.floor(Date.now() / 1000))
-    .first<User & { points: number; avatar: string | null; owned_items: string }>();
+    .first<
+      User & { points: number; avatar: string | null; owned_items: string; owned_styles: string }
+    >();
   if (!row) return null;
   return {
     id: row.id,
@@ -140,6 +157,7 @@ async function currentUser(request: Request, env: Env): Promise<User | null> {
     points: Number(row.points),
     avatar: parseAvatar(row.avatar),
     owned_items: parseOwned(row.owned_items),
+    unlocked_styles: parseOwnedStyles(row.owned_styles),
   };
 }
 
@@ -201,14 +219,26 @@ async function saveAvatar(request: Request, env: Env) {
     return error('请求格式不正确。', 400);
   }
   if (!isAvatarConfig(input.avatar)) return error('形象配置不正确。', 422);
+  const avatar = normalizeAvatar(input.avatar);
   const owned = auth.user.owned_items ?? [];
-  for (const item of Object.values(input.avatar.items)) {
+  // Decorations are no longer edited in the app, but old configs may still
+  // carry them; keep the ownership check so a stored item cannot be forged.
+  for (const item of Object.values(avatar.items ?? {})) {
     if (item && !owned.includes(item)) return error('还没有购买这件装饰。', 403, 'ITEM_NOT_OWNED');
   }
+  const unlocked = new Set(auth.user.unlocked_styles ?? []);
+  for (const [kind, id] of [
+    ['hair', avatar.hair],
+    ['skin', avatar.skin],
+    ['outfit', avatar.outfit],
+  ] as const) {
+    if (!isFreeStyle(avatar.gender, kind, id) && !unlocked.has(styleKey(kind, id)))
+      return error('这个形象选项还没有解锁。', 403, 'STYLE_LOCKED');
+  }
   await env.DB.prepare('UPDATE users SET avatar = ? WHERE id = ?')
-    .bind(JSON.stringify(input.avatar), auth.user.id)
+    .bind(JSON.stringify(avatar), auth.user.id)
     .run();
-  return json({ ok: true, avatar: input.avatar });
+  return json({ ok: true, avatar });
 }
 
 async function purchase(request: Request, env: Env) {
@@ -253,6 +283,55 @@ async function purchase(request: Request, env: Env) {
   });
 }
 
+async function unlockStyle(request: Request, env: Env) {
+  const auth = await requireUser(request, env);
+  if ('response' in auth) return auth.response;
+  if (!(await rateLimit(env.WRITE_LIMITER, auth.user.id)))
+    return error('操作太频繁，请稍后再试。', 429);
+  let input: Record<string, unknown>;
+  try {
+    input = await body(request);
+  } catch {
+    return error('请求格式不正确。', 400);
+  }
+  const kind = input.kind;
+  const option = input.option;
+  if (!isStyleKind(kind) || !isValidStyle(kind, option))
+    return error('形象选项不正确。', 422, 'INVALID_STYLE');
+  // The free default of either gender is never for sale.
+  if (isFreeStyleId(kind, option)) return error('这是默认形象，不需要解锁。', 409, 'STYLE_FREE');
+  const owned = auth.user.unlocked_styles ?? [];
+  const key = styleKey(kind, option);
+  if (owned.includes(key)) return error('这个选项已经解锁了。', 409, 'STYLE_OWNED');
+  const price = stylePrice(kind, option);
+  const nextOwned = [...owned, key];
+  const now = Math.floor(Date.now() / 1000);
+  // Same pattern as decorations: the conditional UPDATE and the guarded spend
+  // insert share one transaction, so the balance can never go negative and a
+  // failed purchase leaves no spend row behind.
+  const [updated] = await env.DB.batch([
+    env.DB.prepare(
+      'UPDATE users SET lifetime_points = lifetime_points - ?, owned_styles = ? WHERE id = ? AND lifetime_points >= ?',
+    ).bind(price, JSON.stringify(nextOwned), auth.user.id, price),
+    env.DB.prepare(
+      'INSERT INTO spend_events(id, user_id, item_id, amount, created_at) SELECT ?, ?, ?, ?, ? WHERE changes() = 1',
+    ).bind(crypto.randomUUID(), auth.user.id, key, price, now),
+  ]);
+  if (updated.meta.changes !== 1)
+    return error('积分不够，再攒一攒吧。', 402, 'INSUFFICIENT_POINTS');
+  const account = await env.DB.prepare('SELECT lifetime_points AS points FROM users WHERE id = ?')
+    .bind(auth.user.id)
+    .first<{ points: number }>();
+  return json({
+    ok: true,
+    kind,
+    option,
+    price,
+    points: Number(account?.points ?? 0),
+    unlocked_styles: nextOwned,
+  });
+}
+
 async function login(request: Request, env: Env) {
   let input: Record<string, unknown>;
   try {
@@ -274,7 +353,7 @@ async function login(request: Request, env: Env) {
 
   const user = validUsername(username)
     ? await env.DB.prepare(
-        'SELECT id, username, display_name, role, password_hash, lifetime_points AS points, avatar, owned_items FROM users WHERE username = ? COLLATE NOCASE',
+        'SELECT id, username, display_name, role, password_hash, lifetime_points AS points, avatar, owned_items, owned_styles FROM users WHERE username = ? COLLATE NOCASE',
       )
         .bind(username)
         .first<
@@ -283,6 +362,7 @@ async function login(request: Request, env: Env) {
             points: number;
             avatar: string | null;
             owned_items: string;
+            owned_styles: string;
           }
         >()
     : null;
@@ -317,6 +397,7 @@ async function login(request: Request, env: Env) {
     points: Number(user.points),
     avatar: parseAvatar(user.avatar),
     owned_items: parseOwned(user.owned_items),
+    unlocked_styles: parseOwnedStyles(user.owned_styles),
   };
   return json({ user: safeUser }, 200, { 'Set-Cookie': cookie(rawToken, lifetime) });
 }
@@ -591,7 +672,7 @@ export async function generateLeaderboard(env: Env, scheduledTime = Date.now()) 
       SELECT user_id, SUM(amount) AS amount FROM spend_events
       WHERE created_at >= ? AND created_at < ? GROUP BY user_id
     )
-    SELECT u.display_name, u.lifetime_points,
+    SELECT u.display_name, u.avatar, u.lifetime_points,
       MAX(COALESCE(SUM(e.points_earned), 0) - COALESCE(s.amount, 0), 0) AS points,
       COUNT(e.id) AS rounds
     FROM score_events e JOIN users u ON u.id = e.user_id
@@ -600,17 +681,37 @@ export async function generateLeaderboard(env: Env, scheduledTime = Date.now()) 
     GROUP BY u.id ORDER BY points DESC, rounds DESC, u.display_name COLLATE NOCASE ASC LIMIT 100`,
   )
     .bind(week.start, week.end, week.start, week.end)
-    .all<{ display_name: string; lifetime_points: number; points: number; rounds: number }>();
+    .all<{
+      display_name: string;
+      avatar: string | null;
+      lifetime_points: number;
+      points: number;
+      rounds: number;
+    }>();
   const snapshot = {
     range: 'week',
     week_start: week.key,
     generated_at: Date.now(),
-    entries: (rows.results ?? []).map((row) => ({
-      display_name: row.display_name,
-      points: Number(row.points),
-      rounds: Number(row.rounds),
-      lifetime_points: Number(row.lifetime_points),
-    })),
+    entries: (rows.results ?? []).map((row) => {
+      const avatar = parseAvatar(row.avatar);
+      return {
+        display_name: row.display_name,
+        points: Number(row.points),
+        rounds: Number(row.rounds),
+        lifetime_points: Number(row.lifetime_points),
+        // Only the four visible fields: no user ID, no purchased decorations.
+        ...(avatar
+          ? {
+              avatar: {
+                gender: avatar.gender,
+                hair: avatar.hair,
+                skin: avatar.skin,
+                outfit: avatar.outfit,
+              },
+            }
+          : {}),
+      };
+    }),
   };
   await env.LEADERBOARD.put(`leaderboard:${week.key}`, JSON.stringify(snapshot), {
     expirationTtl: 8 * 86400,
@@ -620,23 +721,36 @@ export async function generateLeaderboard(env: Env, scheduledTime = Date.now()) 
   // decorations are reflected immediately. No TTL: the last good snapshot
   // survives a paused Cron.
   const allRows = await env.DB.prepare(
-    `SELECT u.display_name, u.lifetime_points, COUNT(e.id) AS rounds
+    `SELECT u.display_name, u.avatar, u.lifetime_points, COUNT(e.id) AS rounds
      FROM users u LEFT JOIN score_events e ON e.user_id = u.id
      WHERE u.role = 'student'
      GROUP BY u.id
      HAVING u.lifetime_points > 0 OR COUNT(e.id) > 0
      ORDER BY u.lifetime_points DESC, rounds DESC, u.display_name COLLATE NOCASE ASC
      LIMIT 100`,
-  ).all<{ display_name: string; lifetime_points: number; rounds: number }>();
+  ).all<{ display_name: string; avatar: string | null; lifetime_points: number; rounds: number }>();
   const allSnapshot = {
     range: 'all',
     generated_at: Date.now(),
-    entries: (allRows.results ?? []).map((row) => ({
-      display_name: row.display_name,
-      points: Number(row.lifetime_points),
-      rounds: Number(row.rounds),
-      lifetime_points: Number(row.lifetime_points),
-    })),
+    entries: (allRows.results ?? []).map((row) => {
+      const avatar = parseAvatar(row.avatar);
+      return {
+        display_name: row.display_name,
+        points: Number(row.lifetime_points),
+        rounds: Number(row.rounds),
+        lifetime_points: Number(row.lifetime_points),
+        ...(avatar
+          ? {
+              avatar: {
+                gender: avatar.gender,
+                hair: avatar.hair,
+                skin: avatar.skin,
+                outfit: avatar.outfit,
+              },
+            }
+          : {}),
+      };
+    }),
   };
   await env.LEADERBOARD.put('leaderboard:all', JSON.stringify(allSnapshot));
 }
@@ -655,6 +769,7 @@ async function route({ request, env }: Context) {
   }
   if (request.method === 'PATCH' && path === '/me/avatar') return saveAvatar(request, env);
   if (request.method === 'POST' && path === '/shop/purchase') return purchase(request, env);
+  if (request.method === 'POST' && path === '/wardrobe/unlock') return unlockStyle(request, env);
   if (request.method === 'POST' && path === '/login') return login(request, env);
   if (request.method === 'POST' && path === '/logout') return logout(request, env);
   if (request.method === 'POST' && path === '/scores') return submitScore(request, env);

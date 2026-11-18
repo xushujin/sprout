@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
   created_at INTEGER NOT NULL,
   lifetime_points INTEGER NOT NULL DEFAULT 0,
   avatar TEXT,
-  owned_items TEXT NOT NULL DEFAULT '[]'
+  owned_items TEXT NOT NULL DEFAULT '[]',
+  owned_styles TEXT NOT NULL DEFAULT '[]'
 );
 CREATE INDEX IF NOT EXISTS users_role_id ON users(role, id);
 

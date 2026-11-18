@@ -340,14 +340,14 @@ describe('sessions and access control', () => {
 });
 
 describe('avatar and shop', () => {
-  it('saves a valid avatar but refuses decorations that are not owned', async () => {
+  it('saves the free avatar but refuses decorations and paid styles that are not owned', async () => {
     const auth = await login();
     const avatar = {
       gender: 'girl',
       hair: 'bob',
       face: 'round',
-      skin: 'tan',
-      outfit: 'hoodie',
+      skin: 'light',
+      outfit: 'blouse',
       items: {},
     };
     const saved = await request('/me/avatar', { avatar }, auth.cookie, undefined, 'PATCH');
@@ -362,6 +362,16 @@ describe('avatar and shop', () => {
     );
     expect(notOwned.status).toBe(403);
 
+    const locked = await request(
+      '/me/avatar',
+      { avatar: { ...avatar, hair: 'ponytail' } },
+      auth.cookie,
+      undefined,
+      'PATCH',
+    );
+    expect(locked.status).toBe(403);
+    expect(((await locked.json()) as { code?: string }).code).toBe('STYLE_LOCKED');
+
     const invalid = await request(
       '/me/avatar',
       { avatar: { ...avatar, skin: 'blue' } },
@@ -370,6 +380,125 @@ describe('avatar and shop', () => {
       'PATCH',
     );
     expect(invalid.status).toBe(422);
+  });
+
+  it('drops the retired face option', async () => {
+    const auth = await login();
+    const saved = await request(
+      '/me/avatar',
+      { avatar: { gender: 'boy', hair: 'buzz', skin: 'light', outfit: 'tee', face: 'oval' } },
+      auth.cookie,
+      undefined,
+      'PATCH',
+    );
+    expect(saved.status).toBe(200);
+    const expected = { gender: 'boy', hair: 'buzz', skin: 'light', outfit: 'tee' };
+    expect(((await saved.json()) as { avatar: unknown }).avatar).toEqual(expected);
+
+    const me = await request('/me', undefined, auth.cookie);
+    expect(((await me.json()) as { user: User }).user.avatar).toEqual(expected);
+  });
+
+  it('unlocks paid styles once, deducts points and records the spend', async () => {
+    const auth = await login();
+    await env.DB.prepare('UPDATE users SET lifetime_points = 2500 WHERE id = ?')
+      .bind(studentId)
+      .run();
+
+    const free = await request('/wardrobe/unlock', { kind: 'hair', option: 'bob' }, auth.cookie);
+    expect(free.status).toBe(409);
+    expect(((await free.json()) as { code?: string }).code).toBe('STYLE_FREE');
+
+    const invalid = await request(
+      '/wardrobe/unlock',
+      { kind: 'hat', option: 'straw_hat' },
+      auth.cookie,
+    );
+    expect(invalid.status).toBe(422);
+
+    const hair = await request(
+      '/wardrobe/unlock',
+      { kind: 'hair', option: 'ponytail' },
+      auth.cookie,
+    );
+    expect(hair.status).toBe(200);
+    expect(((await hair.json()) as { points: number }).points).toBe(1500);
+
+    const again = await request(
+      '/wardrobe/unlock',
+      { kind: 'hair', option: 'ponytail' },
+      auth.cookie,
+    );
+    expect(again.status).toBe(409);
+
+    const skin = await request('/wardrobe/unlock', { kind: 'skin', option: 'deep' }, auth.cookie);
+    expect(skin.status).toBe(200);
+    expect(((await skin.json()) as { points: number }).points).toBe(1000);
+
+    const saved = await request(
+      '/me/avatar',
+      { avatar: { gender: 'girl', hair: 'ponytail', skin: 'deep', outfit: 'blouse' } },
+      auth.cookie,
+      undefined,
+      'PATCH',
+    );
+    expect(saved.status).toBe(200);
+
+    // 1000 left: the 1500 outfit cannot be unlocked, and no spend row appears.
+    const outfit = await request(
+      '/wardrobe/unlock',
+      { kind: 'outfit', option: 'dress' },
+      auth.cookie,
+    );
+    expect(outfit.status).toBe(402);
+
+    const spends = await env.DB.prepare(
+      'SELECT item_id, amount FROM spend_events ORDER BY amount',
+    ).all();
+    expect(spends.results).toEqual([
+      { item_id: 'skin:deep', amount: 500 },
+      { item_id: 'hair:ponytail', amount: 1000 },
+    ]);
+
+    const me = await request('/me', undefined, auth.cookie);
+    const user = ((await me.json()) as { user: User }).user;
+    expect(user.unlocked_styles).toEqual(['hair:ponytail', 'skin:deep']);
+  });
+
+  it('charges 3000 for the formal outfits', async () => {
+    const auth = await login();
+    await env.DB.prepare('UPDATE users SET lifetime_points = 3500 WHERE id = ?')
+      .bind(studentId)
+      .run();
+
+    const unlock = await request(
+      '/wardrobe/unlock',
+      { kind: 'outfit', option: 'royal' },
+      auth.cookie,
+    );
+    expect(unlock.status).toBe(200);
+    expect(((await unlock.json()) as { points: number }).points).toBe(500);
+    const spend = await env.DB.prepare(
+      "SELECT item_id, amount FROM spend_events WHERE item_id = 'outfit:royal'",
+    ).first();
+    expect(spend).toEqual({ item_id: 'outfit:royal', amount: 3000 });
+
+    const saved = await request(
+      '/me/avatar',
+      { avatar: { gender: 'boy', hair: 'buzz', skin: 'light', outfit: 'royal' } },
+      auth.cookie,
+      undefined,
+      'PATCH',
+    );
+    expect(saved.status).toBe(200);
+
+    // 500 left: the second formal outfit is out of reach.
+    const poor = await request(
+      '/wardrobe/unlock',
+      { kind: 'outfit', option: 'ceremony' },
+      auth.cookie,
+    );
+    expect(poor.status).toBe(402);
   });
 
   it('buys a decoration once, deducts points and records the spend', async () => {
@@ -500,11 +629,18 @@ describe('rounds and weekly snapshots', () => {
     expect((await request('/scores', score(), admin.cookie)).status).toBe(403);
   });
 
-  it('Cron aggregates only this Shanghai week and publishes nicknames, while reads never query D1', async () => {
+  it('Cron aggregates only this Shanghai week and publishes nicknames and avatars, while reads never query D1', async () => {
     const week = schoolWeek();
     const auth = await login();
     await request('/scores', score({ id: 'current-round-0001' }), auth.cookie);
     await request('/scores', score({ id: 'previous-round-001' }), auth.cookie);
+    await request(
+      '/me/avatar',
+      { avatar: { gender: 'boy', hair: 'buzz', skin: 'light', outfit: 'tee' } },
+      auth.cookie,
+      undefined,
+      'PATCH',
+    );
     await env.DB.prepare('UPDATE score_events SET created_at = ? WHERE id = ?')
       .bind(week.start - 1, 'previous-round-001')
       .run();
@@ -527,8 +663,15 @@ describe('rounds and weekly snapshots', () => {
     expect(snapshot.week_start).toBe(week.key);
     // Lifetime includes both rounds; the weekly total only includes this week's.
     expect(snapshot.entries).toEqual([
-      { display_name: '小橘子', points: 45, rounds: 1, lifetime_points: 90 },
+      {
+        display_name: '小橘子',
+        points: 45,
+        rounds: 1,
+        lifetime_points: 90,
+        avatar: { gender: 'boy', hair: 'buzz', skin: 'light', outfit: 'tee' },
+      },
     ]);
+    expect(JSON.stringify(snapshot)).not.toContain(studentId);
 
     const all = (await (
       await request('/leaderboard?range=all', undefined, undefined, {
@@ -542,7 +685,13 @@ describe('rounds and weekly snapshots', () => {
     expect(all.range).toBe('all');
     expect(all.week_start).toBeUndefined();
     expect(all.entries).toEqual([
-      { display_name: '小橘子', points: 90, rounds: 2, lifetime_points: 90 },
+      {
+        display_name: '小橘子',
+        points: 90,
+        rounds: 2,
+        lifetime_points: 90,
+        avatar: { gender: 'boy', hair: 'buzz', skin: 'light', outfit: 'tee' },
+      },
     ]);
   });
 

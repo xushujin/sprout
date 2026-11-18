@@ -8,6 +8,8 @@ export interface User {
   points?: number;
   avatar?: AvatarConfig | null;
   owned_items?: string[];
+  /** Unlocked paid cosmetics, as `hair:curly` / `skin:deep` / `outfit:dress`. */
+  unlocked_styles?: string[];
 }
 
 export interface ScoreEvent {
@@ -30,6 +32,8 @@ export interface Leaderboard {
     rounds: number;
     // Optional so snapshots written before the sunflower release still render.
     lifetime_points?: number;
+    // Optional so snapshots written before leaderboard avatars still render.
+    avatar?: AvatarConfig | null;
   }[];
 }
 

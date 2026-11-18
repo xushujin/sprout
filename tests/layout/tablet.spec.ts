@@ -117,6 +117,15 @@ for (const screen of screens) {
                     username: `tablet-${role}`,
                     display_name: role === 'admin' ? '平板老师' : nickname,
                     role,
+                    // A saved avatar keeps the student on the garden instead of
+                    // the first-time avatar editor.
+                    ...(role === 'student'
+                      ? {
+                          points: 125,
+                          owned_items: [],
+                          avatar: { gender: 'girl', hair: 'bob', skin: 'tan', outfit: 'dress' },
+                        }
+                      : {}),
                   },
                 },
               },

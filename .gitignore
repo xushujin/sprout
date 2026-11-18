@@ -1,14 +1,43 @@
+# 依赖
 node_modules/
+
+# 构建产物与增量缓存
 dist/
+*.tsbuildinfo
+
+# 本地 Cloudflare 状态与密钥（示例文件需要保留）
 .wrangler/
 .dev.vars
 .dev.vars.*
 !.dev.vars.example
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.*.example
 .secrets.*
-*.tsbuildinfo
+
+# 测试与覆盖率产物
 playwright-report/
+blob-report/
 test-results/
+coverage/
+
+# 日志
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+
+# 操作系统与编辑器
 .DS_Store
+._*
+.AppleDouble
+.LSOverride
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+
+# 本机工作区数据（会话记忆等）
+.workbuddy/

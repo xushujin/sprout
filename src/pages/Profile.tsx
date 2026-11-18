@@ -2,27 +2,23 @@ import { useState } from 'react';
 import type { User } from '../../shared/types';
 import {
   DEFAULT_AVATAR,
-  FACE_OPTIONS,
   GENDERS,
   HAIR_OPTIONS,
   OUTFIT_OPTIONS,
-  SHOP_ITEMS,
   SKIN_OPTIONS,
   type AvatarConfig,
   type Gender,
-  type ShopItem,
 } from '../../shared/avatar';
+import { isStyleUnlocked, stylePrice, type StyleKind } from '../../shared/wardrobe';
 import { api } from '../lib/api';
 import { UserAvatar } from '../components/UserAvatar';
 
-const SHOP_ICONS: Record<string, string> = {
-  straw_hat: '👒',
-  glasses: '👓',
-  scarf: '🧣',
-  crown: '👑',
-  stars: '✨',
-  brooch: '🌻',
-};
+interface PendingStyle {
+  kind: StyleKind;
+  option: string;
+  label: string;
+  price: number;
+}
 
 export function Profile({
   user,
@@ -35,13 +31,18 @@ export function Profile({
 }) {
   const [avatar, setAvatar] = useState<AvatarConfig>(user.avatar ?? DEFAULT_AVATAR);
   const [points, setPoints] = useState(user.points ?? 0);
-  const [owned, setOwned] = useState(user.owned_items ?? []);
+  const [unlocked, setUnlocked] = useState<string[]>(user.unlocked_styles ?? []);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [confirmItem, setConfirmItem] = useState<ShopItem | null>(null);
+  const [pending, setPending] = useState<PendingStyle | null>(null);
   const firstTime = !user.avatar;
+  const unlockedSet = new Set(unlocked);
+  // While the unlock dialog is open the avatar previews the option for free.
+  const previewAvatar: AvatarConfig = pending
+    ? { ...avatar, [pending.kind]: pending.option }
+    : avatar;
 
   function change(patch: Partial<AvatarConfig>) {
     setAvatar((current) => ({ ...current, ...patch }));
@@ -59,10 +60,23 @@ export function Profile({
     change({ gender, hair, outfit });
   }
 
+  function canUse(kind: StyleKind, id: string) {
+    return isStyleUnlocked(avatar.gender, kind, id, unlockedSet);
+  }
+
+  function choose(kind: StyleKind, option: string, label: string) {
+    if (canUse(kind, option)) {
+      change({ [kind]: option } as Partial<AvatarConfig>);
+      return;
+    }
+    setError('');
+    setMessage('');
+    setPending({ kind, option, label, price: stylePrice(kind, option) });
+  }
+
   async function persist(next: AvatarConfig, extra: Partial<User> = {}, note = '') {
     setBusy(true);
     setError('');
-    setMessage('');
     try {
       const result = await api<{ avatar: AvatarConfig }>(
         '/me/avatar',
@@ -72,7 +86,7 @@ export function Profile({
       setAvatar(result.avatar);
       setDirty(false);
       onUserChange({ ...user, ...extra, avatar: result.avatar });
-      if (note) setMessage(note);
+      setMessage(note);
     } catch (cause) {
       setError((cause as Error).message);
     } finally {
@@ -80,47 +94,32 @@ export function Profile({
     }
   }
 
-  async function buy(item: ShopItem) {
-    if (busy) return;
+  async function unlock() {
+    if (!pending || busy) return;
     setBusy(true);
     setError('');
     setMessage('');
     try {
-      const result = await api<{ points: number; owned_items: string[] }>(
-        '/shop/purchase',
-        { item_id: item.id },
+      const result = await api<{ points: number; unlocked_styles: string[] }>(
+        '/wardrobe/unlock',
+        { kind: pending.kind, option: pending.option },
         { method: 'POST' },
       );
-      const next = { ...avatar, items: { ...avatar.items, [item.slot]: item.id } };
+      const next = { ...avatar, [pending.kind]: pending.option };
       setPoints(result.points);
-      setOwned(result.owned_items);
-      setAvatar(next);
-      setConfirmItem(null);
-      onSpend(item.price);
+      setUnlocked(result.unlocked_styles);
+      setPending(null);
+      onSpend(pending.price);
       await persist(
         next,
-        { points: result.points, owned_items: result.owned_items },
-        `已购买「${item.name}」并戴上。`,
+        { points: result.points, unlocked_styles: result.unlocked_styles },
+        `已解锁「${pending.label}」，并换上了新形象。`,
       );
     } catch (cause) {
       setError((cause as Error).message);
-      setConfirmItem(null);
     } finally {
       setBusy(false);
     }
-  }
-
-  function toggleItem(item: ShopItem) {
-    const items = { ...avatar.items };
-    if (items[item.slot] === item.id) delete items[item.slot];
-    else items[item.slot] = item.id;
-    const next = { ...avatar, items };
-    setAvatar(next);
-    void persist(
-      next,
-      {},
-      items[item.slot] ? `已戴上「${item.name}」。` : `已取下「${item.name}」。`,
-    );
   }
 
   return (
@@ -131,8 +130,8 @@ export function Profile({
           <h1>{firstTime ? '先给自己选个形象' : '我的形象'}</h1>
           <p>
             {firstTime
-              ? '男孩或女孩、发型、肤色和衣服，都可以慢慢换。'
-              : '换形象免费；买装饰会扣积分，向日葵和排名也会受影响。'}
+              ? '默认形象免费；其他发型、肤色和服饰可以用积分解锁。'
+              : '换形象免费；未解锁的发型、肤色和服饰需要积分。'}
           </p>
         </div>
         <span className="page-emblem">🌱</span>
@@ -141,14 +140,15 @@ export function Profile({
       <div className="avatar-layout">
         <section className="avatar-preview-card">
           <div className="avatar-stage">
-            <UserAvatar avatar={avatar} size={190} />
+            <UserAvatar avatar={previewAvatar} size={190} variant="full" />
+            {pending && <span className="avatar-preview-hint">试穿预览 · 未解锁</span>}
           </div>
           <h2>{user.display_name}</h2>
           <p className="avatar-points">
             可用积分 <strong>{points}</strong>
           </p>
           <p className="muted">
-            买装饰会从积分里扣。积分减少后，向日葵可能退回上一阶段，本周星榜排名也会下降。
+            解锁会扣当前积分和本周积分，向日葵可能退回上一阶段。形象会出现在家里、侧栏和这一页。
           </p>
         </section>
 
@@ -162,6 +162,7 @@ export function Profile({
                   key={item.id}
                   type="button"
                   className={avatar.gender === item.id ? 'active' : ''}
+                  aria-pressed={avatar.gender === item.id}
                   onClick={() => changeGender(item.id)}
                 >
                   {item.label}
@@ -172,62 +173,68 @@ export function Profile({
           <div className="avatar-group">
             <span className="avatar-label">发型</span>
             <div className="avatar-options">
-              {HAIR_OPTIONS[avatar.gender].map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={avatar.hair === item.id ? 'active' : ''}
-                  onClick={() => change({ hair: item.id })}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="avatar-group">
-            <span className="avatar-label">脸型</span>
-            <div className="avatar-options">
-              {FACE_OPTIONS.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={avatar.face === item.id ? 'active' : ''}
-                  onClick={() => change({ face: item.id })}
-                >
-                  {item.label}
-                </button>
-              ))}
+              {HAIR_OPTIONS[avatar.gender].map((item) => {
+                const locked = !canUse('hair', item.id);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`${avatar.hair === item.id ? 'active' : ''} ${locked ? 'locked' : ''}`.trim()}
+                    aria-pressed={avatar.hair === item.id}
+                    aria-label={`${item.label}${locked ? `，需要 ${stylePrice('hair', item.id)} 积分解锁` : ''}`}
+                    onClick={() => choose('hair', item.id, item.label)}
+                  >
+                    {item.label}
+                    {locked && <span className="option-price">{stylePrice('hair', item.id)}</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
           <div className="avatar-group">
             <span className="avatar-label">肤色</span>
             <div className="avatar-options">
-              {SKIN_OPTIONS.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`skin-swatch ${avatar.skin === item.id ? 'active' : ''}`}
-                  style={{ background: item.color }}
-                  onClick={() => change({ skin: item.id })}
-                  aria-label={item.label}
-                />
-              ))}
+              {SKIN_OPTIONS.map((item) => {
+                const locked = !canUse('skin', item.id);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`skin-swatch ${avatar.skin === item.id ? 'active' : ''} ${locked ? 'locked' : ''}`.trim()}
+                    style={{ background: item.color }}
+                    onClick={() => choose('skin', item.id, item.label)}
+                    aria-label={`${item.label}${locked ? `，需要 ${stylePrice('skin', item.id)} 积分解锁` : ''}`}
+                    aria-pressed={avatar.skin === item.id}
+                    title={item.label}
+                  >
+                    {locked && <span className="skin-price">{stylePrice('skin', item.id)}</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
           <div className="avatar-group">
             <span className="avatar-label">基础服饰</span>
             <div className="avatar-options">
-              {OUTFIT_OPTIONS[avatar.gender].map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={avatar.outfit === item.id ? 'active' : ''}
-                  onClick={() => change({ outfit: item.id })}
-                >
-                  <span className="outfit-dot" style={{ background: item.color }} />
-                  {item.label}
-                </button>
-              ))}
+              {OUTFIT_OPTIONS[avatar.gender].map((item) => {
+                const locked = !canUse('outfit', item.id);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`${avatar.outfit === item.id ? 'active' : ''} ${locked ? 'locked' : ''}`.trim()}
+                    aria-pressed={avatar.outfit === item.id}
+                    aria-label={`${item.label}${locked ? `，需要 ${stylePrice('outfit', item.id)} 积分解锁` : ''}`}
+                    onClick={() => choose('outfit', item.id, item.label)}
+                  >
+                    <span className="outfit-dot" style={{ background: item.color }} />
+                    {item.label}
+                    {locked && (
+                      <span className="option-price">{stylePrice('outfit', item.id)}</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
           {error && (
@@ -253,81 +260,25 @@ export function Profile({
         </section>
       </div>
 
-      {!firstTime && (
-        <section className="avatar-shop">
-          <div className="section-heading">
-            <h2>装饰商店</h2>
-            <span className="muted">
-              已拥有 {owned.length} / {SHOP_ITEMS.length}
-            </span>
-          </div>
-          <div className="shop-grid">
-            {SHOP_ITEMS.map((item) => {
-              const isOwned = owned.includes(item.id);
-              const equipped = avatar.items[item.slot] === item.id;
-              return (
-                <article key={item.id} className={`shop-card ${equipped ? 'equipped' : ''}`}>
-                  <span className="shop-icon" aria-hidden="true">
-                    {SHOP_ICONS[item.id]}
-                  </span>
-                  <div>
-                    <strong>{item.name}</strong>
-                    <p>{item.description}</p>
-                  </div>
-                  {equipped ? (
-                    <button
-                      type="button"
-                      className="button small secondary"
-                      disabled={busy}
-                      onClick={() => toggleItem(item)}
-                    >
-                      取下
-                    </button>
-                  ) : isOwned ? (
-                    <button
-                      type="button"
-                      className="button small secondary"
-                      disabled={busy}
-                      onClick={() => toggleItem(item)}
-                    >
-                      戴上
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="button small primary"
-                      disabled={busy}
-                      onClick={() => setConfirmItem(item)}
-                    >
-                      {item.price} 积分
-                    </button>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {confirmItem && (
+      {pending && (
         <div
-          className="purchase-overlay"
+          className="unlock-overlay"
           role="presentation"
           onClick={() => {
-            if (!busy) setConfirmItem(null);
+            if (!busy) setPending(null);
           }}
         >
           <div
-            className="purchase-card"
+            className="unlock-card"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="purchase-title"
+            aria-labelledby="unlock-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 id="purchase-title">买下「{confirmItem.name}」？</h2>
+            <h2 id="unlock-title">解锁「{pending.label}」？</h2>
             <p>
-              会扣 <strong>{confirmItem.price}</strong> 积分。积分减少后，向日葵可能退回上一阶段，
-              本周星榜排名也会下降。
+              需要 <strong>{pending.price}</strong>{' '}
+              积分。会同时扣减本周积分，向日葵可能退回上一阶段。
             </p>
             <p className="muted">当前可用积分：{points}</p>
             <div className="dialog-actions">
@@ -335,21 +286,21 @@ export function Profile({
                 type="button"
                 className="button secondary"
                 disabled={busy}
-                onClick={() => setConfirmItem(null)}
+                onClick={() => setPending(null)}
               >
                 再想想
               </button>
               <button
                 type="button"
                 className="button primary"
-                disabled={busy || points < confirmItem.price}
-                onClick={() => void buy(confirmItem)}
+                disabled={busy || points < pending.price}
+                onClick={() => void unlock()}
               >
-                {points < confirmItem.price
+                {points < pending.price
                   ? '积分不够'
                   : busy
-                    ? '购买中…'
-                    : `确认花 ${confirmItem.price} 积分`}
+                    ? '解锁中…'
+                    : `花 ${pending.price} 积分解锁`}
               </button>
             </div>
           </div>

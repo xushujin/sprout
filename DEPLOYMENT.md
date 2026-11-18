@@ -192,3 +192,59 @@
 - 退出按钮改为 `.profile` 的直接子元素；手机端显示图标 + “退出”文字，桌面 / 平板仍为图标按钮。
 - Pages 部署 `b9380ef9`，预览地址 `https://b9380ef9.wordsprout-5ud.pages.dev`，正式域名仍为 `https://wordsprout.hatim.eu.org`；Worker 未改动。
 - 验证通过：手机 390×844 实际浏览器确认“退出”可见，桌面仍为图标；TypeScript、Prettier、生产构建。
+
+2026-11-16 我的形象整身 3D 版发布：
+
+- 36 套整身形象按“2 性别 × 2 肤色 × 3 发型 × 3 服饰”一次性生成，每张包含头、发型、脖子、身体、服装和鞋，尺寸 512×683 透明 WebP，放在 `src/assets/full/`；不再运行时拼接头像与身体。
+- `UserAvatar` 改为按 `AvatarConfig` 选择对应整身图：`/profile` 使用 `variant="full"` 显示完整全身，35px 侧栏按每张图实测的头部框裁成 bust；草帽、眼镜、皇冠、围巾、胸针仍分层并按头部框缩放对齐。`AvatarConfig`、商店 ID 和 API 未变。
+- 肤色只保留浅色 / 小麦色，`SkinTone` 的 `deep` 已移除，`SKIN_OPTIONS` 不再出现深色皮肤。旧深色资源文件未删除，但类型与 UI 不再引用。
+- Pages 生产部署 `78289632` 已发布，预览地址 `https://78289632.wordsprout-5ud.pages.dev`，正式域名仍为 `https://wordsprout.hatim.eu.org`；本次上传 41 个文件，621 个既有文件复用。
+- 正式域名 `/profile/` 返回 200，资源指纹为 `main-B56MNJx0.js` / `main-C0C2X5mJ.css`；未登录 `/api/me` 返回 401。线上浏览器用模拟身份确认整身形象、草帽与胸针显示正常。
+- 验证通过：`npm run typecheck`、`npm test` 27/27、`npm run build`。本次仅更新 Pages 静态前端与形象资源；Worker、D1 schema、KV、Cron、生产账号和会话均未修改。
+
+2026-11-16 形象比例统一、3D 道具与试戴发布：
+
+- 36 张整身图统一标准化：头高 190px、头宽 190px、头框固定在 `(161, 20)`，可见身体宽 245px，脚底统一在 `y=660`；`FRAMES` 改为同一头框，解决 36 套之间头大/头小、身体宽窄不一的问题。
+- 装饰道具不再使用手绘扁平 SVG：草帽、圆眼镜、红围巾、小皇冠、向日葵胸针改为预渲染的 3D 透明素材，按统一头部/身体锚点叠加；6 件道具只生成 6 张素材，不按 36 套形象 × 6 件展开，也不生成全部组合。
+- 未购买道具增加“试戴 / 取消试戴”：试戴只改变页面预览，不扣积分、不保存；购买后清除对应试戴状态并写入形象。购买确认仍保留扣分和向日葵阶段提示。
+- Pages 生产部署 `d555b11e` 已发布，预览地址 `https://d555b11e.wordsprout-5ud.pages.dev`，正式域名仍为 `https://wordsprout.hatim.eu.org`；`8870ba3d` 为锚点微调前的中间版本。
+- 正式域名 `/profile/` 返回 200，资源指纹为 `main-BU6b3vQ4.js` / `main-BA0_3OlS.css`；未登录 `/api/me` 返回 401。线上浏览器用模拟身份确认试戴、取消试戴与 3D 道具显示正常。
+- 验证通过：`npm run typecheck`、`npm test` 27/27、`npm run build`。本次仅更新 Pages 静态前端与形象/道具资源；Worker、D1 schema、KV、Cron、生产账号和会话均未修改。
+
+2026-11-16 耳罩耳机替换圆眼镜：
+
+- 商店 `face` 槽位道具由“圆眼镜”改为“小耳机”：新增正面双耳罩、头梁的 3D 透明素材 `src/assets/items/headphones.webp`，按头部锚点叠加；圆眼镜从商店隐藏，保留库存兼容字段，旧配置仍通过 `isAvatarConfig` 校验。
+- 道具商店显示 6 件（草帽、小耳机、红围巾、小皇冠、星星背景、向日葵胸针）；旧 `glasses` 不再出现在新商店。
+- Pages 生产部署 `30b12f6b`，预览地址 `https://30b12f6b.wordsprout-5ud.pages.dev`，正式域名 `https://wordsprout.hatim.eu.org`；正式 `/profile/` 返回 200，新资源指纹 `main-mQDQfLhc.js` / `main-BA0_3OlS.css`，未登录 `/api/me` 返回 401。
+- 验证通过：`npm run typecheck`、`npm test` 27/27、`npm run build`。本次仅更新 Pages 静态前端与道具资源；Worker、D1 schema、KV、Cron、生产账号和会话均未修改。
+
+2026-11-17 用户形象分层重构：
+
+- 形象改为分层叠放：同一 1024×1536 画布上的皮肤 / 下装 / 上衣 / 头发四层透明 WebP（转换后 640×960，共 19 个文件、472KB），不再预生成“性别 × 肤色 × 发型 × 服饰”组合图；侧栏 35px 头像从同一组图层裁切头部，`AVATAR_BUST` 控制裁切窗口。
+- 肤色恢复并扩展为 3 种（自然色 / 小麦色 / 深肤色）；移除脸型与道具的编辑和渲染，`AvatarConfig` 精简为 `gender/hair/skin/outfit`，`items` 保留为可选兼容字段。装饰商店与购买入口从界面移除，`/api/shop/purchase`、`spend_events` 与已购装饰数据保留；`saveAvatar` 统一走 `normalizeAvatar`，旧的 `face` / `items` 配置不会报错。
+- 新增 `assets-src/avatar/` 存放 1024×1536 PNG 母版（不参与构建）与重新生成 WebP 的命令；删除已无引用的 `src/assets/full|avatars|bodies|items` 及四个模块（约 3.8MB），`src/assets` 由 3.8MB 降至 476KB。
+- Worker 版本 `2d19468b-1058-411b-9d63-40786b7e1886`；Pages 生产部署 `3eaef3c8`，正式域名 `https://wordsprout.hatim.eu.org`。先发布 API 再发布静态页，保证旧前端在过渡期仍可使用。
+- 验证：TypeScript、28 项单元 / 集成测试、生产构建、5 个平板视口布局测试全部通过；线上 `/profile/` 以模拟身份确认三层形象资源均返回 200（640×960），未登录 `/api/me` 返回 401，周榜 API 正常。D1 schema、KV、Cron、生产账号与学习数据未修改。
+
+2026-11-18 形象选项付费解锁：
+
+- 默认形象改为：男孩 寸头 / 自然色 / 短袖，女孩 波波头 / 自然色 / 衬衫；其余发型 1000 分、肤色 500 分、服饰 1500 分，一次解锁永久可用。解锁同时扣当前成长积分与本周积分并写 `spend_events`，周榜净积分和向日葵阶段随之变化。
+- 数据：`users` 新增 `owned_styles`（JSON 数组，如 `hair:curly`）；新增 `POST /api/wardrobe/unlock` `{ kind, option }`，沿用积分事务（条件 UPDATE + `changes()=1` 才写消费流水）；`PATCH /api/me/avatar` 校验免费或已解锁，`/api/me` 与登录返回 `unlocked_styles`。
+- 迁移 `npm run db:styles -- --remote`：线上补列并把已有形象中正在使用的付费项回填为已解锁——hatim（卷发 / 深肤色 / 背带裤）、果果（丸子头 / 背带裙）、童童（马尾 / 连衣裙）；不扣积分、不写消费流水，其余账号保持 `[]`。
+- Worker 版本 `c3cded17-04bd-48da-8074-d2021bf98c0c`；Pages 生产部署 `c4400acc`，正式域名 `https://wordsprout.hatim.eu.org`。发布顺序为数据迁移 → API → 静态页，保证旧形象在过渡期仍可保存。
+- 验证：TypeScript、29 项单元 / 集成测试、生产构建、5 个平板视口布局测试全部通过；线上未登录 `/api/me` 返回 401、周榜 200；`/profile/` 以模拟身份确认付费项显示 1000 / 500 / 1500 价格、已解锁的马尾无价格标记、0 积分时确认按钮置灰且不发起请求。
+
+2026-11-18 星榜形象展示：
+
+- Cron 生成周榜 / 总榜快照时写入每人形象，仅保留 `gender / hair / skin / outfit` 四项，不含账号、用户 ID、已购装饰或积分流水；`GET /api/leaderboard` 仍只读 KV，不回源 D1。
+- 星榜每行由向日葵改为形象缩略图（右下角保留向日葵阶段小徽章），整行可点开弹窗查看整身形象、名次、轮次、积分与阶段；旧快照或缺形象的条目回退为向日葵，弹窗提示“形象将在下次榜单更新后显示”。
+- Worker 版本 `b496848e-dbd1-45a6-80a5-396b427a603e`；Pages 生产部署 `47434872`，正式域名 `https://wordsprout.hatim.eu.org`。
+- 验证：TypeScript、29 项测试（Cron 快照包含 avatar，且序列化结果不含 student_id）、生产构建、5 个平板视口布局测试；线上 `/leaderboard` 以模拟快照确认 3 个形象缩略图、1 个旧快照回退、弹窗与关闭正常，无 JS 报错。KV 快照将在下一次 Cron（30 分钟周期）后带上真实形象。
+
+2026-11-18 四套礼服与按选项定价：
+
+- 新增男孩「紫色礼服」`royal`、「蓝色盛装」`ceremony`，女孩「紫罗兰礼服」`lavender`、「粉色礼服」`blush`，每套 3000 分；每个性别现有 5 套服饰。
+- 四套素材为 1024×1536 PNG，归档到 `assets-src/avatar/{boy,girl}/top-*.png`，按统一比例转成 640×960 WebP；均为整套（含短裤 / 裙摆），不依赖下装层。
+- 定价改为按选项覆盖：`stylePrice(kind, id)`，发型 1000、肤色 500、日常服饰 1500、礼服 3000；服务端扣费与前端价格徽章共用同一函数，避免显示与实扣不一致。
+- Worker 版本 `3080fcbe-501e-41d4-8c51-84bc8fa896de`；Pages 生产部署 `483e73dc`，正式域名 `https://wordsprout.hatim.eu.org`。先发 API 再发前端，避免旧接口按 1500 收取新礼服。
+- 验证：30 项测试（含礼服 3000 扣费与余额不足）、TypeScript、生产构建、5 个平板视口布局；线上 `/profile/` 五套服饰显示 1500 / 3000 价格，礼服弹窗 3000，解锁后整身图层返回 200，无 JS 报错。
