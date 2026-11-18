@@ -2772,9 +2772,9 @@
     "changes": "Synthesized offline with Piper 1.8.0; converted to mono 44.1 kHz / 64 kbps MP3; normalized loudness."
   },
   {
-    "word": "hill",
-    "text": "hill",
-    "file": "/audio/hill.mp3",
+    "word": "november",
+    "text": "November",
+    "file": "/audio/november.mp3",
     "kind": "synthesized",
     "author": "WordSprout · local Piper synthesis",
     "source": "https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/ljspeech/high",
@@ -3636,9 +3636,9 @@
     "changes": "Synthesized offline with Piper 1.8.0; converted to mono 44.1 kHz / 64 kbps MP3; normalized loudness."
   },
   {
-    "word": "cheese",
-    "text": "cheese",
-    "file": "/audio/cheese.mp3",
+    "word": "december",
+    "text": "December",
+    "file": "/audio/december.mp3",
     "kind": "synthesized",
     "author": "WordSprout · local Piper synthesis",
     "source": "https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/ljspeech/high",

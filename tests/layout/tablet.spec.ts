@@ -174,7 +174,11 @@ for (const screen of screens) {
     await touchTarget(picker.getByRole('button', { name: '六年级' }));
     await picker.getByRole('button', { name: '六年级' }).tap();
     await expect(page.locator('.preview-card h3').first()).toHaveText('apple');
-    await expect(picker.getByRole('tab')).toHaveCount(3);
+    await expect(picker.getByRole('tab')).toHaveCount(4);
+    await picker.getByRole('tab', { name: '主题包' }).tap();
+    await picker.getByRole('button', { name: /^动物朋友/ }).tap();
+    await expect(page.locator('.preview-card h3').first()).toHaveText('cat');
+    await noPageOverflow(page);
     await picker.getByRole('tab', { name: '幼小衔接' }).tap();
     await expect(picker.getByText('先听声音，再认一认')).toBeVisible();
     await picker.getByRole('button', { name: /^数字与数量/ }).tap();

@@ -1,14 +1,24 @@
 import { expect, test, type Page } from '@playwright/test';
+import { answerCorrectly, answerWrong } from './quiz-helper';
 
 async function student(page: Page, id = 'catalog-test') {
   await page.route('**/api/me', (route) =>
     route.fulfill({
-      json: { user: { id, username: id, display_name: '词库小芽', role: 'student' } },
+      json: {
+        user: {
+          id,
+          username: id,
+          display_name: '词库小芽',
+          role: 'student',
+          avatar: { gender: 'boy', hair: 'buzz', skin: 'light', outfit: 'tee' },
+          unlocked_styles: [],
+        },
+      },
     }),
   );
 }
 
-test('offers project-authored preschool/grades/levels, persists choices and never fetches retired data', async ({
+test('offers project-authored topic packs, preschool, grades and levels without fetching retired data', async ({
   page,
 }) => {
   await student(page);
@@ -20,7 +30,7 @@ test('offers project-authored preschool/grades/levels, persists choices and neve
   });
   await page.goto('/');
   const picker = page.getByRole('region', { name: '选择学习词库' });
-  await expect(picker.getByRole('tab')).toHaveCount(3);
+  await expect(picker.getByRole('tab')).toHaveCount(4);
   await expect(picker.getByRole('tab', { name: '外研版', exact: true })).toHaveCount(0);
   const labels = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级'];
   const firstWords = ['apple', 'apple', 'apple', 'apple', 'apple', 'apple'];
@@ -32,6 +42,31 @@ test('offers project-authored preschool/grades/levels, persists choices and neve
   }
   await page.reload();
   await expect(picker.getByRole('button', { name: '六年级' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await picker.getByRole('tab', { name: '主题包' }).click();
+  await expect(picker.getByText('按兴趣挑一个主题')).toBeVisible();
+  for (const [label, firstWord] of [
+    ['动物朋友', 'cat'],
+    ['好吃的食物', 'apple'],
+    ['校园一天', 'book'],
+    ['温暖的家', 'house'],
+    ['天气与四季', 'sun'],
+    ['出门去看看', 'bus'],
+    ['我的身体', 'face'],
+    ['动起来', 'run'],
+  ] as const) {
+    await picker.getByRole('button', { name: new RegExp(`^${label}`) }).click();
+    await expect(page.locator('.preview-card h3').first()).toHaveText(firstWord);
+    await expect(picker.locator('.book-selection-summary')).toContainText('/ 20 项');
+  }
+  await page.reload();
+  await expect(picker.getByRole('tab', { name: '主题包' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(picker.getByRole('button', { name: /^动起来/ })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
@@ -75,6 +110,38 @@ test('offers project-authored preschool/grades/levels, persists choices and neve
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(writes).toEqual([]);
   expect(removedRequests).toEqual([]);
+});
+
+test('keeps topic-pack review progress separate from grade rounds', async ({ page }) => {
+  await student(page, 'topic-scope');
+  await page.goto('/');
+  const picker = page.getByRole('region', { name: '选择学习词库' });
+  await picker.getByRole('tab', { name: '主题包' }).click();
+  await picker.getByRole('button', { name: /^动物朋友/ }).click();
+  await expect(page.locator('.preview-card h3').first()).toHaveText('cat');
+  await page.getByRole('button', { name: '开始一轮学习' }).click();
+  for (let index = 0; index < 5; index += 1) {
+    const en = await page.locator('.study-card h1').innerText();
+    const zh = await page.locator('.study-card h2').innerText();
+    await page.getByRole('button', { name: '记住啦，来挑战' }).click();
+    if (index === 0) await answerWrong(page, en, zh);
+    else await answerCorrectly(page, en, zh);
+    await page.getByRole('button', { name: index === 4 ? '收获本轮成长' : '下一个单词' }).click();
+  }
+  await page.getByRole('button', { name: '返回首页' }).click();
+  await page.locator('.book-tabs').getByRole('tab', { name: '按年级' }).click();
+  await expect(page.locator('.hero-card')).toContainText('听一听、认一认');
+  await expect(page.locator('.hero-card')).not.toContainText('个小芽需要照顾');
+  await picker.getByRole('tab', { name: '主题包' }).click();
+  await expect(page.locator('.hero-card')).toContainText('还有 1 个小芽需要照顾');
+  const saved = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('wordsprout:progress:v1:topic-scope')!),
+  );
+  expect(Object.keys(saved.words)).toHaveLength(0);
+  const reviews = Object.values(saved.preschoolWords['topic-animals'] as Record<string, unknown>);
+  expect(reviews.filter((state) => (state as { needsReview: boolean }).needsReview)).toHaveLength(
+    1,
+  );
 });
 
 test('migrates retired selection without deleting old progress or unsent rounds', async ({
@@ -173,10 +240,11 @@ test('limits mistakes and distractors to the chosen general collection and award
   await page.getByRole('button', { name: '开始一轮学习' }).click();
   await expect(page.locator('.study-card h1')).toHaveText('apple');
   for (let index = 0; index < 5; index++) {
+    const en = await page.locator('.study-card h1').innerText();
     const zh = await page.locator('.study-card h2').innerText();
     await page.getByRole('button', { name: '记住啦，来挑战' }).click();
     await expect(page.getByRole('button', { name: '选择英语', exact: true })).toHaveCount(0);
-    await page.getByRole('button', { name: `选择${zh}`, exact: true }).click();
+    await answerCorrectly(page, en, zh);
     await page.getByRole('button', { name: index === 4 ? '收获本轮成长' : '下一个单词' }).click();
   }
   await expect.poll(() => submissions.length).toBe(1);
@@ -271,7 +339,7 @@ test('preschool rounds use only topic audio, one score request, and separate rev
     await expect(page.locator('.study-next')).toHaveText(/记住啦，来挑战/);
     await page.getByRole('button', { name: '记住啦，来挑战' }).click();
     await expect(page.locator('.answer-option')).toHaveCount(3);
-    await page.getByRole('button', { name: `选择${zh}`, exact: true }).click();
+    await answerCorrectly(page, word, zh);
     await page.getByRole('button', { name: index === 4 ? '收获本轮成长' : '下一个单词' }).click();
   }
   await expect(page.getByText('五颗小芽，都发芽啦！')).toBeVisible();

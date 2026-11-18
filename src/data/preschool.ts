@@ -38,7 +38,7 @@ export const PRESCHOOL_THEMES: readonly PreschoolTheme[] = [
     name: '课堂与书包',
     emoji: '🎒',
     description: '听、看、坐好，还有小书包里的文具',
-    wordIds: ['book', 'pencil', 'bag', 'listen', 'sit', 'stand', 'open', 'good', 'yes', 'no'],
+    wordIds: ['book', 'pencil', 'schoolbag', 'listen', 'sit', 'stand', 'open', 'good', 'yes', 'no'],
   },
   {
     id: 'world',

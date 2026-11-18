@@ -27,8 +27,8 @@ nine|九|9️⃣
 ten|十|🔟
 mother|妈妈|👩
 father|爸爸|👨
-sister|姐妹|👧
-brother|兄弟|👦
+sister|姐姐；妹妹|👧
+brother|哥哥；弟弟|👦
 grandma|奶奶；外婆|👵
 grandpa|爷爷；外公|👴
 family|家人|👨‍👩‍👧‍👦
@@ -108,7 +108,7 @@ chair|椅子|🪑
 door|门|🚪
 window|窗户|🪟
 school|学校|🏫
-classroom|教室|
+classroom|教室|🏫
 teacher|老师|🧑‍🏫
 friend|朋友|🧑‍🤝‍🧑
 student|学生|🧑‍🎓
@@ -188,7 +188,7 @@ stand|站|🧍
 open|打开|🚪
 yes|是|☑️
 no|不|👎
-OK|好的|👌
+OK|可以；行|👌
 `;
 
 const thirdGradeWords = `
@@ -213,13 +213,13 @@ station|车站|🚉
 airport|机场|🛫
 village|村庄|🏡
 city|城市|🏙️
-country|国家；乡村|🌍
+country|国家|🌍
 town|城镇|🏘️
 street|街道|🛣️
 road|道路|🛣️
 river|河流|🏞️
 lake|湖|🌊
-hill|小山|⛰️
+november|November|十一月|📅
 mountain|山|🏔️
 farm|农场|🚜
 Monday|星期一|📅
@@ -251,7 +251,7 @@ take|拿；带|✋
 give|给|🎁
 find|找到|🔎
 keep|保留|📦
-learn|学习|📚
+learn|学会|📚
 live|居住|🏠
 work|工作|💼
 study|学习；研究|📖
@@ -269,7 +269,7 @@ difficult|困难的|🧗
 easy|容易的|✅
 important|重要的|⭐
 interesting|有趣的|🎉
-nice|友好的；美好的|😊
+nice|美好的；宜人的|😊
 clever|聪明的|💡
 friendly|友好的|🤝
 excited|兴奋的|🤩
@@ -291,7 +291,7 @@ hamburger|汉堡|🍔
 ice-cream|冰淇淋|🍨
 candy|糖果|🍬
 chocolate|巧克力|🍫
-cheese|奶酪|🧀
+december|December|十二月|📅
 `;
 
 const fourthGradeWords = `
@@ -322,7 +322,7 @@ medicine|药|💊
 safe|安全的|🛡️
 dangerous|危险的|⚠️
 weak|虚弱的|🫠
-well|健康的；好地|✅
+well|好地；身体好|✅
 ill|生病的|🤒
 healthy|健康的|💚
 shop|商店|🏪
@@ -340,30 +340,30 @@ shy|害羞的|🙈
 kind|友善的|💚
 honest|诚实的|🤝
 lucky|幸运的|🍀
-fear|害怕|😨
+fear|恐惧|😨
 worry|担心|😟
 hope|希望|🌟
 love|爱|❤️
 smile|微笑|😊
 bring|带来|🎁
-choose|选择|👉
+choose|挑选|👉
 call|打电话；呼叫|📞
 ask|询问|❓
 answer|回答|💬
 catch|抓住|🤲
 throw|投掷|🏀
 hold|握住|✋
-start|开始|▶️
+start|启动；出发|▶️
 stop|停止|⏹️
 put|放置|📥
-pick|挑选；采摘|🧺
+pick|采摘；捡起|🧺
 drop|掉落|💧
 win|获胜|🏆
 pass|传递；通过|➡️
 count|数数|🔢
 spell|拼写|🔤
 check|检查|✅
-finish|完成|🏁
+finish|结束|🏁
 begin|开始|🌱
 lesson|课|📖
 homework|家庭作业|📝
@@ -443,7 +443,7 @@ excellent|优秀的|🏅
 perfect|完美的|💯
 modern|现代的|🏙️
 traditional|传统的|🏮
-bright|明亮的；聪明的|💡
+bright|明亮的|💡
 arrive|到达|📍
 borrow|借入|📚
 send|发送|📤
@@ -459,7 +459,7 @@ tell|告诉|📣
 share|分享|🤲
 message|消息|💌
 photo|照片|📸
-programme|节目；项目|📺
+programme|节目|📺
 radio|收音机|📻
 television|电视|📺
 newspaper|报纸|📰
@@ -482,8 +482,8 @@ dish|盘子；菜肴|🍽️
 menu|菜单|📋
 hobby|爱好|🎨
 sport|体育运动|🏅
-game|游戏；比赛|🎮
-race|赛跑；比赛|🏁
+game|游戏|🎮
+race|赛跑|🏁
 ticket|票|🎟️
 festival|节日|🎉
 holiday|假期|🏖️
@@ -589,7 +589,7 @@ foreign|外国的|🌐
 forever|永远|♾️
 frightened|受惊的|😨
 guess|猜测|❓
-hard|努力的；困难的|🧱
+hard|努力的；坚硬的|🧱
 hide|隐藏|🙈
 imagine|想象|💭
 improve|改善|📈

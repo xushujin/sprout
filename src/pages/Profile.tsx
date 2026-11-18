@@ -69,6 +69,7 @@ export function Profile({
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [pending, setPending] = useState<PendingStyle | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const [group, setGroup] = useState<EditorGroup>('hair');
   const viewport = useViewport();
   const firstTime = !user.avatar;
@@ -78,6 +79,15 @@ export function Profile({
     ? { ...avatar, [pending.kind]: pending.option }
     : avatar;
 
+  useEffect(() => {
+    if (!confirming) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !busy) setConfirming(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [confirming, busy]);
+
   function change(patch: Partial<AvatarConfig>) {
     setAvatar((current) => ({ ...current, ...patch }));
     setDirty(true);
@@ -85,6 +95,8 @@ export function Profile({
   }
 
   function changeGender(gender: Gender) {
+    setPending(null);
+    setConfirming(false);
     const hair = HAIR_OPTIONS[gender].some((item) => item.id === avatar.hair)
       ? avatar.hair
       : HAIR_OPTIONS[gender][0].id;
@@ -100,11 +112,16 @@ export function Profile({
 
   function choose(kind: StyleKind, option: string, label: string) {
     if (canUse(kind, option)) {
+      setPending(null);
+      setConfirming(false);
       change({ [kind]: option } as Partial<AvatarConfig>);
       return;
     }
+    // Locked options are tried on for free; the purchase dialog waits for an
+    // explicit confirmation so the preview is never covered by a modal.
     setError('');
     setMessage('');
+    setConfirming(false);
     setPending({ kind, option, label, price: stylePrice(kind, option) });
   }
 
@@ -145,6 +162,7 @@ export function Profile({
       setGift(result.gift_points);
       setUnlocked(result.unlocked_styles);
       setPending(null);
+      setConfirming(false);
       onSpend(result.spent_points);
       await persist(
         next,
@@ -163,14 +181,14 @@ export function Profile({
   }
 
   return (
-    <div className="page-enter profile-page">
+    <div className={`page-enter profile-page ${pending ? 'try-on' : ''}`.trim()}>
       <div className="profile-mobile-bar">
         <h1>{firstTime ? '选择我的形象' : '我的形象'}</h1>
         <span className="profile-points-chip">🌱 {points + gift}</span>
         <button
           type="button"
           className="button primary"
-          disabled={!dirty || busy}
+          disabled={!dirty || busy || Boolean(pending)}
           onClick={() => void persist(avatar)}
         >
           {busy ? '保存中…' : '保存'}
@@ -319,68 +337,100 @@ export function Profile({
               {message}
             </p>
           )}
+          {pending && !confirming && (
+            <div className="unlock-bar" role="status">
+              <div className="unlock-bar-text">
+                <strong>试穿「{pending.label}」</strong>
+                <span>{pending.price} 积分解锁后自动换上并保存</span>
+              </div>
+              <div className="unlock-bar-actions">
+                <button
+                  type="button"
+                  className="button secondary small"
+                  disabled={busy}
+                  onClick={() => setPending(null)}
+                >
+                  取消试穿
+                </button>
+                <button
+                  type="button"
+                  className="button primary small"
+                  disabled={busy || points + gift < pending.price}
+                  onClick={() => setConfirming(true)}
+                >
+                  {points + gift < pending.price ? '积分不够' : '解锁并穿上'}
+                </button>
+              </div>
+            </div>
+          )}
           <div className="avatar-actions">
             <button
               className="button primary"
-              disabled={!dirty || busy}
+              disabled={!dirty || busy || Boolean(pending)}
               onClick={() => void persist(avatar)}
             >
               {busy ? '保存中…' : '保存形象'}
             </button>
-            {dirty && <span className="muted">有未保存的修改</span>}
+            {pending ? (
+              <span className="muted">试穿中，解锁或取消后才能保存</span>
+            ) : (
+              dirty && <span className="muted">有未保存的修改</span>
+            )}
           </div>
+          {pending && confirming && (
+            <div
+              className="unlock-overlay"
+              role="presentation"
+              onClick={() => {
+                if (!busy) setConfirming(false);
+              }}
+            >
+              <div
+                className="unlock-card"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="unlock-title"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <h2 id="unlock-title">解锁「{pending.label}」？</h2>
+                <p>
+                  需要 <strong>{pending.price}</strong> 积分。
+                  <span className="unlock-note-long">
+                    优先使用奖励积分，不足部分再扣成长积分和本周积分，向日葵可能退回上一阶段。
+                  </span>
+                  <span className="unlock-note-short">优先扣奖励积分。</span>
+                </p>
+                <p className="muted">
+                  当前可用积分：{points + gift}
+                  {gift > 0 ? `（其中奖励 ${gift}，优先使用）` : ''}
+                </p>
+                <div className="dialog-actions">
+                  <button
+                    type="button"
+                    className="button secondary"
+                    disabled={busy}
+                    onClick={() => setConfirming(false)}
+                  >
+                    再想想
+                  </button>
+                  <button
+                    type="button"
+                    className="button primary"
+                    disabled={busy || points + gift < pending.price}
+                    onClick={() => void unlock()}
+                  >
+                    {points + gift < pending.price
+                      ? '积分不够'
+                      : busy
+                        ? '解锁中…'
+                        : `花 ${pending.price} 积分解锁`}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       </div>
-
-      {pending && (
-        <div
-          className="unlock-overlay"
-          role="presentation"
-          onClick={() => {
-            if (!busy) setPending(null);
-          }}
-        >
-          <div
-            className="unlock-card"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="unlock-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h2 id="unlock-title">解锁「{pending.label}」？</h2>
-            <p>
-              需要 <strong>{pending.price}</strong>{' '}
-              积分。优先使用奖励积分，不足部分再扣成长积分和本周积分，向日葵可能退回上一阶段。
-            </p>
-            <p className="muted">
-              当前可用积分：{points + gift}
-              {gift > 0 ? `（其中奖励 ${gift}，优先使用）` : ''}
-            </p>
-            <div className="dialog-actions">
-              <button
-                type="button"
-                className="button secondary"
-                disabled={busy}
-                onClick={() => setPending(null)}
-              >
-                再想想
-              </button>
-              <button
-                type="button"
-                className="button primary"
-                disabled={busy || points + gift < pending.price}
-                onClick={() => void unlock()}
-              >
-                {points + gift < pending.price
-                  ? '积分不够'
-                  : busy
-                    ? '解锁中…'
-                    : `花 ${pending.price} 积分解锁`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

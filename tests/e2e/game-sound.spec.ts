@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { answerCorrectly, answerWrong } from './quiz-helper';
 
 test('starts music on tap, ducks for speech, distinguishes feedback, and exits without losing saved progress', async ({
   page,
@@ -83,22 +84,28 @@ test('starts music on tap, ducks for speech, distinguishes feedback, and exits w
   );
   await resetNotes();
   await page.getByRole('button', { name: '记住啦，来挑战' }).click();
-  await page.getByRole('button', { name: '选择苹果', exact: true }).click();
+  await answerCorrectly(page, 'apple', '苹果');
   const correctSound = await notes();
   expect(correctSound.length).toBeGreaterThan(0);
   await page.getByRole('button', { name: '下一个单词' }).click();
   await resetNotes();
   await page.getByRole('button', { name: '记住啦，来挑战' }).click();
-  await page.locator('.answer-option').filter({ hasNotText: '香蕉' }).first().click();
+  await answerWrong(page, 'banana', '香蕉');
   const wrongSound = await notes();
   expect(wrongSound.length).toBeGreaterThan(0);
   expect(wrongSound).not.toEqual(correctSound);
   await page.getByRole('button', { name: '答题音效', exact: true }).click();
   await page.getByRole('button', { name: '下一个单词' }).click();
   await resetNotes();
-  for (const [i, zh] of ['橙子', '葡萄', '梨'].entries()) {
+  for (const [i, pair] of (
+    [
+      ['orange', '橙子'],
+      ['grape', '葡萄'],
+      ['pear', '梨'],
+    ] as const
+  ).entries()) {
     await page.getByRole('button', { name: '记住啦，来挑战' }).click();
-    await page.getByRole('button', { name: `选择${zh}`, exact: true }).click();
+    await answerCorrectly(page, ...pair);
     await page.getByRole('button', { name: i === 2 ? '收获本轮成长' : '下一个单词' }).click();
   }
   await expect(page.locator('.result-card')).toBeVisible();

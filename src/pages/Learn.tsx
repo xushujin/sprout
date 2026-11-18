@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { User } from '../../shared/types';
 import type { Word } from '../data/words';
-import { findBook, loadBookWords } from '../data/catalog';
+import { findBook, loadBookWords, scopeFor } from '../data/catalog';
 import { BookPicker } from '../components/BookPicker';
 import { SoundControls } from '../components/SoundControls';
 import { gameSound, type SoundPreferences } from '../lib/game-sound';
@@ -15,6 +15,14 @@ import {
   type Progress,
   type RoundWord,
 } from '../lib/progress';
+import {
+  QUIZ_SECONDS,
+  quizHint,
+  quizPrompt,
+  spellAttempt,
+  spellingTiles,
+  type LetterTile,
+} from '../lib/quiz';
 import { speak, stopAudio } from '../lib/audio';
 import { growthFor } from '../lib/growth';
 import { Icon } from '../components/Icons';
@@ -47,7 +55,7 @@ export function Learn({
 }) {
   const [bookId, setBookId] = useState(() => findBook(progress.bookId).id);
   const book = findBook(bookId);
-  const scope = book.mode === 'preschool' ? book.id : 'general';
+  const scope = scopeFor(book);
   const [loadedBook, setLoadedBook] = useState<{ id: string; words: Word[] } | null>(null);
   const [bookError, setBookError] = useState('');
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -62,6 +70,10 @@ export function Learn({
   const [selected, setSelected] = useState<string | null>(null);
   const [options, setOptions] = useState<Word[]>([]);
   const [remaining, setRemaining] = useState(15);
+  const [quizSeconds, setQuizSeconds] = useState(15);
+  const [tiles, setTiles] = useState<LetterTile[]>([]);
+  const [picked, setPicked] = useState<number[]>([]);
+  const [revealWord, setRevealWord] = useState(false);
   const [audioHint, setAudioHint] = useState('');
   const saving = useRef(false);
   const answered = useRef(false);
@@ -143,6 +155,8 @@ export function Learn({
     setRound(null);
     setAnswers([]);
     setAudioHint('');
+    setPicked([]);
+    setRevealWord(false);
     pausedAt.current = null;
     roundActive(false);
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -183,22 +197,14 @@ export function Learn({
     if (phase !== 'quiz') return;
     const tick = () => {
       if (pausedAt.current !== null) return;
-      const seconds = Math.max(0, Math.ceil(15 - (Date.now() - started.current) / 1000));
+      const seconds = Math.max(0, Math.ceil(quizSeconds - (Date.now() - started.current) / 1000));
       setRemaining(seconds);
       gameSound.setUrgent(seconds <= 5);
-      if (!seconds && !answered.current) {
-        answered.current = true;
-        setSelected(null);
-        setAnswers((old) => [...old, false]);
-        setPhase('feedback');
-        stopAudio();
-        gameSound.setUrgent(false);
-        gameSound.answer(false);
-      }
+      if (!seconds && !answered.current) finish(false, null);
     };
     const interval = window.setInterval(tick, 200);
     return () => window.clearInterval(interval);
-  }, [phase, index]);
+  }, [phase, index, quizSeconds]);
 
   function start() {
     if (scopeWords.length < 5) return;
@@ -213,33 +219,62 @@ export function Learn({
     setPhase('study');
     setAnswers([]);
     setAudioHint('');
+    setPicked([]);
+    setRevealWord(false);
     roundActive(true);
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
   async function play() {
     setAudioHint('');
-    if (current && !(await speak(current.word)))
-      setAudioHint('音频暂时没播出，请点发音按钮再试一次。');
+    if (!current) return;
+    if (await speak(current.word)) return;
+    setAudioHint('音频暂时没播出，请点发音按钮再试一次。');
+    // 听音题没有文字提示，音频失败时先把单词亮出来，别让孩子卡住。
+    if (current.quiz === 'listen') setRevealWord(true);
   }
   function quiz() {
     if (!current) return;
-    setOptions(optionsFor(current.word, roundWords));
-    setRemaining(15);
+    const kind = current.quiz;
+    setOptions(optionsFor(current.word, roundWords, kind === 'picture' ? 'zh' : 'en'));
+    setQuizSeconds(QUIZ_SECONDS[kind]);
+    setRemaining(QUIZ_SECONDS[kind]);
     setSelected(null);
+    setRevealWord(false);
+    if (kind === 'spell') {
+      setTiles(spellingTiles(current.word));
+      setPicked([]);
+    }
     answered.current = false;
     started.current = Date.now();
     setPhase('quiz');
     void play();
   }
-  function choose(id: string) {
-    if (answered.current || phase !== 'quiz' || !current) return;
+  function finish(correct: boolean, id: string | null) {
     answered.current = true;
     setSelected(id);
-    setAnswers((old) => [...old, id === current.word.id]);
+    setAnswers((old) => [...old, correct]);
     setPhase('feedback');
     stopAudio();
     gameSound.setUrgent(false);
-    gameSound.answer(id === current.word.id);
+    gameSound.answer(correct);
+  }
+  function choose(id: string) {
+    if (answered.current || phase !== 'quiz' || !current) return;
+    finish(id === current.word.id, id);
+  }
+  function pickLetter(tileIndex: number) {
+    if (answered.current || phase !== 'quiz' || !current || current.quiz !== 'spell') return;
+    if (picked.includes(tileIndex)) return;
+    const next = [...picked, tileIndex];
+    setPicked(next);
+    if (next.length < current.word.en.length) return;
+    // Filling the last slot is the submit action, so there is one less button
+    // for a child to hunt for on a phone.
+    finish(spellAttempt(tiles, next) === current.word.en.toLowerCase(), null);
+  }
+  function undoLetter() {
+    if (answered.current || phase !== 'quiz' || !picked.length) return;
+    setPicked(picked.slice(0, -1));
   }
   async function next() {
     if (!round || saving.current) return;
@@ -368,7 +403,13 @@ export function Learn({
           <h2>下一轮的小伙伴</h2>
           <span>
             {scopeWords.length
-              ? `${book.mode === 'preschool' ? '先听音再认意思' : '只从当前词库选词'} · ${book.count} 项`
+              ? `${
+                  book.mode === 'preschool'
+                    ? '先听音再认意思'
+                    : book.mode === 'theme'
+                      ? '同一主题，四种题型'
+                      : '只从当前词库选词'
+                } · ${book.count} 项`
               : '词库加载后展示'}
           </span>
         </div>
@@ -392,7 +433,9 @@ export function Learn({
         <p className="local-note">
           {book.mode === 'preschool'
             ? '幼小衔接为自主启蒙路线 · 成长记录保存在这台设备 · 完成一轮后同步积分'
-            : '课标参考词库为自主分级 · 成长记录保存在这台设备 · 完成一轮后同步积分'}
+            : book.mode === 'theme'
+              ? '主题包为自主整理的主题词集 · 词条来自 600 词词库 · 完成一轮后同步积分'
+              : '课标参考词库为自主分级 · 成长记录保存在这台设备 · 完成一轮后同步积分'}
         </p>
       </div>
     );
@@ -465,6 +508,7 @@ export function Learn({
 
   if (!current) return null;
   const correct = answers[index];
+  const kind = current.quiz;
   return (
     <div className="round-page page-enter">
       <div className="round-toolbar">
@@ -529,7 +573,7 @@ export function Learn({
           </span>
           <WordPicture word={current.word} />
           <h1>{current.word.en}</h1>
-          <span className="phonetic">{current.word.phonetic}</span>
+          {current.word.phonetic && <span className="phonetic">{current.word.phonetic}</span>}
           <h2>{current.word.zh}</h2>
           <button className="sound-button" onClick={() => void play()}>
             <Icon name="sound" />
@@ -546,15 +590,9 @@ export function Learn({
           </button>
         </section>
       ) : (
-        <section className="quiz-card">
+        <section className={`quiz-card quiz-${kind}`} data-quiz={kind}>
           <div className="quiz-title">
-            <h1>
-              {phase === 'feedback'
-                ? correct
-                  ? '答对啦，真棒！'
-                  : '没关系，再记住它！'
-                : '听一听，选出正确的意思'}
-            </h1>
+            <h1>{quizPrompt(kind, phase === 'feedback' ? 'feedback' : 'quiz', correct)}</h1>
             <span
               className={`timer ${remaining <= 5 ? 'urgent' : ''}`}
               aria-label={`剩余 ${remaining} 秒`}
@@ -562,39 +600,130 @@ export function Learn({
               {remaining}s
             </span>
           </div>
-          <button className="quiz-sound" onClick={() => void play()} aria-label="再听一次发音">
-            <Icon name="sound" size={32} />
-            <span>再听一次</span>
-          </button>
-          <p className="quiz-word">{current.word.en}</p>
-          <p className="muted">也可以看单词来选择 · 每题 15 秒</p>
+          <div className="quiz-stage">
+            {kind === 'picture' && (
+              <>
+                <button
+                  className="quiz-sound"
+                  onClick={() => void play()}
+                  aria-label="再听一次发音"
+                >
+                  <Icon name="sound" size={32} />
+                  <span>再听一次</span>
+                </button>
+                <p className="quiz-word">{current.word.en}</p>
+              </>
+            )}
+            {kind === 'reverse' && (
+              <>
+                <WordPicture word={current.word} />
+                <p className="quiz-word quiz-word--zh">{current.word.zh}</p>
+                <button
+                  className="quiz-sound quiz-sound--compact"
+                  onClick={() => void play()}
+                  aria-label="再听一次发音"
+                >
+                  <Icon name="sound" size={24} />
+                  <span>听一听</span>
+                </button>
+              </>
+            )}
+            {kind === 'listen' && (
+              <>
+                <button
+                  className="quiz-sound"
+                  onClick={() => void play()}
+                  aria-label="再听一次发音"
+                >
+                  <Icon name="sound" size={32} />
+                  <span>再听一次</span>
+                </button>
+                {revealWord ? (
+                  <p className="quiz-word">{current.word.en}</p>
+                ) : (
+                  <p className="quiz-word quiz-word--waiting" aria-label="单词先藏起来，用耳朵听">
+                    · · ·
+                  </p>
+                )}
+              </>
+            )}
+            {kind === 'spell' && (
+              <>
+                <WordPicture word={current.word} />
+                <p className="quiz-word quiz-word--zh">{current.word.zh}</p>
+              </>
+            )}
+          </div>
+          <p className="muted">{quizHint(kind)}</p>
           {audioHint && (
             <p className="muted" role="status">
               {audioHint}
             </p>
           )}
-          <div className="answer-grid">
-            {options.map((word) => (
-              <button
-                key={word.id}
-                onClick={() => choose(word.id)}
-                disabled={phase === 'feedback'}
-                className={`answer-option ${phase === 'feedback' && word.id === current.word.id ? 'correct' : ''} ${phase === 'feedback' && selected === word.id && !correct ? 'incorrect' : ''}`}
-                aria-label={`选择${word.zh}`}
+          {kind === 'spell' ? (
+            <div className="spell-board">
+              <div
+                className="spell-slots"
+                aria-label={`这个单词有 ${current.word.en.length} 个字母`}
               >
-                {(word.image || word.emoji) && <WordPicture word={word} />}
-                <span>{word.zh}</span>
+                {Array.from({ length: current.word.en.length }, (_, slot) => (
+                  <span key={slot} className={picked[slot] === undefined ? '' : 'filled'}>
+                    {picked[slot] === undefined ? '' : tiles[picked[slot]].letter}
+                  </span>
+                ))}
+              </div>
+              <div className="spell-tiles">
+                {tiles.map((tile, tileIndex) => (
+                  <button
+                    key={tile.id}
+                    type="button"
+                    onClick={() => pickLetter(tileIndex)}
+                    disabled={phase === 'feedback' || picked.includes(tileIndex)}
+                    className={picked.includes(tileIndex) ? 'used' : ''}
+                    aria-label={`字母 ${tile.letter}`}
+                  >
+                    {tile.letter}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="text-button spell-undo"
+                onClick={undoLetter}
+                disabled={phase === 'feedback' || !picked.length}
+              >
+                退一格
               </button>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className={`answer-grid ${kind === 'picture' ? '' : 'answer-grid--en'}`}>
+              {options.map((word) => (
+                <button
+                  key={word.id}
+                  onClick={() => choose(word.id)}
+                  disabled={phase === 'feedback'}
+                  className={`answer-option ${phase === 'feedback' && word.id === current.word.id ? 'correct' : ''} ${phase === 'feedback' && selected === word.id && !correct ? 'incorrect' : ''}`}
+                  aria-label={`选择${kind === 'picture' ? word.zh : word.en}`}
+                >
+                  {kind === 'picture' && (word.image || word.emoji) && <WordPicture word={word} />}
+                  <span>{kind === 'picture' ? word.zh : word.en}</span>
+                </button>
+              ))}
+            </div>
+          )}
           {phase === 'feedback' && (
             <div className={`feedback ${correct ? 'good' : 'retry'}`} role="status">
               <RoundSprout answers={answers} />
               <div>
                 <strong>
-                  {correct
-                    ? '✓ 小芽长高了一点！'
-                    : `${current.word.emoji} ${current.word.en} 是「${current.word.zh}」`}
+                  {correct ? (
+                    '✓ 小芽长高了一点！'
+                  ) : (
+                    <>
+                      {current.word.emoji ? `${current.word.emoji} ` : ''}
+                      {current.word.en} 是「{current.word.zh}」
+                    </>
+                  )}
                 </strong>
                 <p>
                   {correct

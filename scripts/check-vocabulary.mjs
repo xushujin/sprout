@@ -9,6 +9,7 @@ import {
   GRADE_BANDS,
 } from '../src/data/general-words.ts';
 import { PRESCHOOL_THEMES, PRESCHOOL_WORDS, preschoolWords } from '../src/data/preschool.ts';
+import { TOPIC_PACKS, topicWords } from '../src/data/topics.ts';
 
 const approved = new Set(GENERAL_WORDS.map((word) => word.id));
 const audio = JSON.parse(readFileSync('public/audio/sources.json', 'utf8'));
@@ -31,6 +32,8 @@ for (const [grade, words] of Object.entries(GRADE_BANDS)) {
     assert.ok(word.en.trim() && word.zh.trim());
     const source = audio.find((item) => item.word === word.id);
     assert.ok(source, `missing audio attribution: ${word.id}`);
+    assert.equal(source.file, `/audio/${word.id}.mp3`, `audio file mismatch: ${word.id}`);
+    assert.ok(word.emoji || word.image, `missing picture: ${word.id}`);
     if (source.kind === 'synthesized') {
       assert.equal(source.model, 'en_US-ljspeech-high');
       assert.ok(source.dataset_url?.startsWith('https://keithito.com/'));
@@ -50,6 +53,43 @@ for (const [grade, words] of Object.entries(GRADE_BANDS)) {
   }
 }
 assert.equal(cumulativeCount, GENERAL_WORD_TARGET);
+const visual = (word) => word.image || word.emoji || `letter:${word.en.charAt(0)}`;
+const seenEn = new Set();
+const seenZh = new Set();
+const seenSenses = new Map();
+for (const word of GENERAL_WORDS) {
+  assert.match(word.id, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+  assert.ok(word.en.trim() && word.zh.trim());
+  assert.ok(word.emoji || word.image, `missing picture: ${word.id}`);
+  assert.ok(!word.zh.includes('|'), `malformed meaning: ${word.id}`);
+  assert.ok(!seenEn.has(word.en.toLowerCase()), `duplicate spelling: ${word.en}`);
+  assert.ok(!seenZh.has(word.zh), `duplicate meaning: ${word.zh}`);
+  seenEn.add(word.en.toLowerCase());
+  seenZh.add(word.zh);
+  // One Chinese sense must point at exactly one English word, otherwise a
+  // "看中文选英文" question can have two defensible answers.
+  for (const sense of word.zh.split('；').map((item) => item.trim())) {
+    assert.ok(sense, `empty sense: ${word.id}`);
+    assert.ok(
+      !seenSenses.has(sense),
+      `shared sense 「${sense}」: ${seenSenses.get(sense)} and ${word.id}`,
+    );
+    seenSenses.set(sense, word.id);
+  }
+}
+// The first grade and every preschool theme promise one distinct picture per
+// word; higher grades may reuse an emoji, but options exclude shared pictures.
+assert.equal(
+  new Set(GRADE_BANDS[1].map(visual)).size,
+  GRADE_BANDS[1].length,
+  'grade 1 pictures must be unique',
+);
+for (const theme of PRESCHOOL_THEMES)
+  assert.equal(
+    new Set(preschoolWords(theme.id).map(visual)).size,
+    theme.wordIds.length,
+    `preschool pictures must be unique: ${theme.id}`,
+  );
 const preschoolIds = new Set();
 for (const theme of PRESCHOOL_THEMES) {
   assert.match(theme.id, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
@@ -64,6 +104,18 @@ for (const theme of PRESCHOOL_THEMES) {
 }
 assert.equal(PRESCHOOL_WORDS.length, 50);
 assert.equal(preschoolIds.size, 50);
+let topicItems = 0;
+for (const pack of TOPIC_PACKS) {
+  assert.match(pack.id, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+  assert.equal(pack.wordIds.length, 20, `topic ${pack.id} must offer four rounds`);
+  assert.equal(new Set(pack.wordIds).size, pack.wordIds.length, `duplicate in ${pack.id}`);
+  assert.equal(topicWords(pack.id).length, 20);
+  for (const id of pack.wordIds) {
+    assert.ok(approved.has(id), `topic source must remain in approved vocabulary: ${id}`);
+  }
+  topicItems += pack.wordIds.length;
+}
+assert.equal(topicItems, TOPIC_PACKS.length * 20);
 for (const file of readdirSync('public/audio').filter((name) => name.endsWith('.mp3'))) {
   assert.ok(approved.has(file.slice(0, -4)), `unapproved MP3: ${file}`);
 }
@@ -90,5 +142,5 @@ if (process.argv.includes('--dist')) {
     assert.ok(approved.has(file.slice(0, -4)), `unapproved built MP3: ${file}`);
 }
 console.log(
-  `Content verified: ${CURRICULUM_CORE_TARGET}-word curriculum reference target, ${approved.size} attributed MP3s, and ${preschoolIds.size} preschool vocabulary items; no external textbook data.`,
+  `Content verified: ${CURRICULUM_CORE_TARGET}-word curriculum reference target, ${approved.size} attributed MP3s, ${preschoolIds.size} preschool vocabulary items, and ${topicItems} topic-pack entries; no external textbook data.`,
 );

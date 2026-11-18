@@ -1,8 +1,9 @@
 import type { Word } from './words';
 import { GENERAL_GRADES, GENERAL_WORDS_BY_GRADE, GRADE_BANDS } from './general-words';
 import { PRESCHOOL_THEMES, PRESCHOOL_THEMES_BY_ID, preschoolWords } from './preschool';
+import { TOPIC_PACKS, TOPIC_PACKS_BY_ID, topicWords } from './topics';
 
-export type BookMode = 'grade' | 'level' | 'preschool';
+export type BookMode = 'grade' | 'level' | 'preschool' | 'theme';
 export interface Book {
   id: string;
   name: string;
@@ -48,6 +49,15 @@ export const BOOKS: Book[] = [
     added: theme.wordIds.length,
     description: theme.description,
   })),
+  ...TOPIC_PACKS.map((pack) => ({
+    id: `topic-${pack.id}`,
+    name: `主题包 · ${pack.name}`,
+    mode: 'theme' as const,
+    theme: pack.id,
+    count: pack.wordIds.length,
+    added: pack.wordIds.length,
+    description: pack.description,
+  })),
   ...levels.map((level) => ({
     id: `level-${level.id}`,
     name: `${level.name}词库`,
@@ -74,5 +84,12 @@ export async function loadBookWords(book: Book, _signal?: AbortSignal): Promise<
       .grades.flatMap((grade) => GRADE_BANDS[grade]);
   if (book.mode === 'preschool' && PRESCHOOL_THEMES_BY_ID.has(book.theme!))
     return preschoolWords(book.theme!);
+  if (book.mode === 'theme' && TOPIC_PACKS_BY_ID.has(book.theme!)) return topicWords(book.theme!);
   throw new Error('该词库已不可用，请选择通用练习。');
+}
+
+// Grade and level books share one progress scope; themed collections keep their
+// own review pool so a mistake in 动物朋友 does not leak into 校园一天.
+export function scopeFor(book: Book): string {
+  return book.mode === 'grade' || book.mode === 'level' ? 'general' : book.id;
 }

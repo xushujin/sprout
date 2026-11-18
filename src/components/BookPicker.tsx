@@ -1,10 +1,12 @@
 import { BOOKS, GRADE_LABELS, type Book, type BookMode } from '../data/catalog';
 import { CURRICULUM_CORE_TARGET, GENERAL_WORD_TARGET } from '../data/general-words';
 import { PRESCHOOL_THEMES } from '../data/preschool';
+import { TOPIC_PACKS } from '../data/topics';
 import { Icon } from './Icons';
 
 const tabs: { mode: BookMode; title: string }[] = [
   { mode: 'grade', title: '按年级' },
+  { mode: 'theme', title: '主题包' },
   { mode: 'level', title: '按难度' },
   { mode: 'preschool', title: '幼小衔接' },
 ];
@@ -78,16 +80,53 @@ export function BookPicker({
             </p>
           </>
         )}
+        {selected.mode === 'theme' && (
+          <>
+            <div className="pack-intro">
+              <div>
+                <strong>按兴趣挑一个主题</strong>
+                <span>每个主题包 20 个词 · 每轮 5 个 · 认图片、听发音、拼单词</span>
+              </div>
+              <span aria-hidden="true">🧺</span>
+            </div>
+            <div className="pack-options">
+              {BOOKS.filter((book) => book.mode === 'theme').map((book) => {
+                const pack = TOPIC_PACKS.find((item) => item.id === book.theme)!;
+                return (
+                  <button
+                    key={book.id}
+                    className={selected.id === book.id ? 'selected' : ''}
+                    aria-pressed={selected.id === book.id}
+                    onClick={() => onChange(book.id)}
+                  >
+                    <span className="pack-emoji" aria-hidden="true">
+                      {pack.emoji}
+                    </span>
+                    <span className="pack-copy">
+                      <strong>{pack.name}</strong>
+                      <span>{pack.description}</span>
+                    </span>
+                    <span className="pack-count">{book.count} 词</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="book-note">
+              主题包由 WordSprout
+              自主整理，词条全部来自当前词库与同一批录音，只是换一种生活场景来复习；不对应任何教材单元，也不额外增加积分门槛。
+            </p>
+          </>
+        )}
         {selected.mode === 'preschool' && (
           <>
-            <div className="preschool-intro">
+            <div className="pack-intro">
               <div>
                 <strong>先听声音，再认一认</strong>
                 <span>每个小主题 10 个词 · 每轮 5 个 · 适合刚接触英语的孩子</span>
               </div>
               <span aria-hidden="true">🌱</span>
             </div>
-            <div className="preschool-theme-options">
+            <div className="pack-options">
               {BOOKS.filter((book) => book.mode === 'preschool').map((book) => {
                 const theme = PRESCHOOL_THEMES.find((item) => item.id === book.theme)!;
                 return (
@@ -97,14 +136,14 @@ export function BookPicker({
                     aria-pressed={selected.id === book.id}
                     onClick={() => onChange(book.id)}
                   >
-                    <span className="preschool-theme-emoji" aria-hidden="true">
+                    <span className="pack-emoji" aria-hidden="true">
                       {theme.emoji}
                     </span>
-                    <span className="preschool-theme-copy">
+                    <span className="pack-copy">
                       <strong>{theme.name}</strong>
                       <span>{theme.description}</span>
                     </span>
-                    <span className="preschool-theme-count">{book.count} 词</span>
+                    <span className="pack-count">{book.count} 词</span>
                   </button>
                 );
               })}

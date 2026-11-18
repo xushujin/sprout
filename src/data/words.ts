@@ -64,7 +64,7 @@ export const WORDS: Word[] = [
     phonetic: '/ˈpen.səl/',
     category: '我的小书包',
   },
-  { id: 'bag', en: 'bag', zh: '书包', emoji: '🎒', phonetic: '/bæɡ/', category: '我的小书包' },
+  { id: 'bag', en: 'bag', zh: '包；袋子', emoji: '👜', phonetic: '/bæɡ/', category: '身边的世界' },
   {
     id: 'ruler',
     en: 'ruler',

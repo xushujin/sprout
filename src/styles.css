@@ -987,23 +987,36 @@ input[type='checkbox']:focus-visible {
 .unlock-overlay {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 70;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: #1f382c66;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 24px;
+  /* The preview stays visible on purpose: the card never dims the whole page. */
+  background: transparent;
+  pointer-events: none;
 }
 .unlock-card {
-  width: min(420px, 100%);
-  padding: 26px;
-  border-radius: 22px;
+  width: min(380px, 100%);
+  max-height: min(72dvh, 560px);
+  overflow-y: auto;
+  padding: 22px;
+  border: 1px solid #e2e9d6;
+  border-radius: 18px;
   background: #fcfdf7;
-  box-shadow: 0 20px 80px #1b3b3929;
+  box-shadow: 0 24px 60px -22px #1b3b3966;
+  pointer-events: auto;
+  animation: unlock-rise 0.18s ease-out;
+}
+@keyframes unlock-rise {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
 }
 .unlock-card h2 {
   margin-bottom: 10px;
-  font-size: 19px;
+  font-size: 18px;
 }
 .unlock-card p {
   font-size: 13px;
@@ -1011,8 +1024,68 @@ input[type='checkbox']:focus-visible {
   color: #6f7c5e;
 }
 .unlock-card .dialog-actions {
-  margin-top: 18px;
+  margin-top: 16px;
 }
+.unlock-note-short {
+  display: none;
+}
+
+/* Try-on strip: appears under the options while a locked style is previewed. */
+.unlock-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px dashed #c9dab1;
+  border-radius: 14px;
+  background: #f7faef;
+}
+.unlock-bar-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-right: auto;
+}
+.unlock-bar-text strong {
+  font-size: 13px;
+  color: #3f6630;
+}
+.unlock-bar-text span {
+  font-size: 11px;
+  color: #8b967e;
+}
+.unlock-bar-actions {
+  display: flex;
+  gap: 8px;
+}
+.unlock-bar-actions .button {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  /* On phones the strip docks above the options so the preview keeps its height. */
+  .unlock-bar {
+    margin: 6px 0 0;
+    padding: 9px 11px;
+    border-style: solid;
+    background: #f3f8e8;
+  }
+  /* Give the strip its own space instead of covering the option rows. */
+  .profile-page.try-on .avatar-stage {
+    height: clamp(230px, calc(100dvh - 360px), 470px);
+  }
+  .unlock-bar-text strong {
+    font-size: 12px;
+  }
+  .unlock-bar-text span {
+    font-size: 10px;
+  }
+}
+
 @media (max-width: 980px) {
   .avatar-layout {
     grid-template-columns: 1fr;
@@ -1251,6 +1324,113 @@ input[type='checkbox']:focus-visible {
 .answer-option.incorrect {
   border-color: #dfb698;
   background: #faf0e5;
+}
+.quiz-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 18px 0 8px;
+}
+.quiz-stage .word-emoji {
+  font-size: 78px;
+  line-height: 1.3;
+  margin: 4px 0 0;
+}
+.quiz-stage .word-image {
+  width: 106px;
+  height: 106px;
+  margin-top: 4px;
+}
+.quiz-word--zh {
+  font-size: 30px;
+}
+.quiz-word--waiting {
+  letter-spacing: 0.32em;
+  color: #bcc6b1;
+  padding-left: 0.32em;
+}
+.quiz-sound--compact {
+  flex-direction: row;
+  gap: 7px;
+  margin: 12px auto 0;
+  padding: 9px 18px;
+  border-radius: 30px;
+  font-size: 12px;
+}
+.answer-grid--en {
+  margin-top: 22px;
+}
+.answer-grid--en .answer-option {
+  min-height: 98px;
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: #4f6a44;
+  gap: 0;
+}
+.spell-board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 17px;
+  margin: 20px auto 26px;
+}
+.spell-slots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.spell-slots span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 50px;
+  border: 2px dashed #d9e2cd;
+  border-radius: 10px;
+  background: #f8faf1;
+  color: #45633c;
+  font-size: 26px;
+  font-weight: 700;
+}
+.spell-slots span.filled {
+  border-style: solid;
+  border-color: #a9c58d;
+  background: #eef4e3;
+}
+.spell-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 9px;
+  max-width: 520px;
+}
+.spell-tiles button {
+  min-width: 46px;
+  height: 50px;
+  padding: 0 12px;
+  border: 1px solid #dde6d2;
+  border-radius: 12px;
+  background: #fff;
+  color: #4a6440;
+  font-size: 22px;
+  font-weight: 650;
+  box-shadow: 0 2px 0 #e8eddf;
+}
+.spell-tiles button:hover:not(:disabled) {
+  background: #f2f7e9;
+  border-color: #a9c58d;
+}
+.spell-tiles button.used {
+  opacity: 0.22;
+  box-shadow: none;
+  background: #f3f5ec;
+}
+.spell-undo {
+  color: #8a9a7e;
+  font-size: 12px;
 }
 .feedback {
   display: flex;
@@ -2162,6 +2342,50 @@ td small {
     width: 50px;
     height: 50px;
   }
+  .quiz-stage {
+    margin: 14px 0 6px;
+  }
+  .quiz-stage .word-emoji {
+    font-size: 58px;
+  }
+  .quiz-stage .word-image {
+    width: 82px;
+    height: 82px;
+  }
+  .quiz-word--zh {
+    font-size: 24px;
+  }
+  .answer-grid--en {
+    margin-top: 18px;
+  }
+  .answer-grid--en .answer-option {
+    padding: 10px 6px;
+    min-height: 84px;
+    font-size: 16px;
+  }
+  .spell-board {
+    gap: 14px;
+    margin: 16px auto 22px;
+  }
+  .spell-slots {
+    gap: 6px;
+  }
+  .spell-slots span {
+    width: 34px;
+    height: 42px;
+    border-radius: 9px;
+    font-size: 21px;
+  }
+  .spell-tiles {
+    gap: 7px;
+  }
+  .spell-tiles button {
+    min-width: 40px;
+    height: 44px;
+    padding: 0 9px;
+    border-radius: 10px;
+    font-size: 19px;
+  }
   .feedback {
     flex-direction: column;
     text-align: center;
@@ -2393,7 +2617,7 @@ td small {
 }
 .book-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 5px;
   background: #f0f3e7;
   border-radius: 12px;
@@ -2421,7 +2645,7 @@ td small {
 }
 .grade-options button,
 .level-options button,
-.preschool-theme-options button,
+.pack-options button,
 .term-options button {
   border: 1px solid #e3e9d9;
   border-radius: 11px;
@@ -2432,21 +2656,21 @@ td small {
 }
 .grade-options strong,
 .level-options strong,
-.preschool-theme-options strong {
+.pack-options strong {
   display: block;
   font-size: 13px;
   font-weight: 600;
 }
 .grade-options span,
 .level-options button > span:last-child,
-.preschool-theme-copy > span {
+.pack-copy > span {
   display: block;
   font-size: 10px;
   margin-top: 4px;
 }
 .grade-options button.selected,
 .level-options button.selected,
-.preschool-theme-options button.selected,
+.pack-options button.selected,
 .term-options button.selected {
   border-color: #80a46b;
   background: #edf4e3;
@@ -2463,7 +2687,7 @@ td small {
   font-size: 24px;
   margin-bottom: 6px;
 }
-.preschool-intro {
+.pack-intro {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2475,26 +2699,26 @@ td small {
   color: #6e8559;
   font-size: 11px;
 }
-.preschool-intro > div {
+.pack-intro > div {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-.preschool-intro strong {
+.pack-intro strong {
   color: #496c3b;
   font-size: 13px;
 }
-.preschool-intro > span {
+.pack-intro > span {
   flex-shrink: 0;
   font-size: 27px;
 }
-.preschool-theme-options {
+.pack-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
   margin-top: 13px;
 }
-.preschool-theme-options button {
+.pack-options button {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -2503,21 +2727,21 @@ td small {
   color: #6f8263;
   min-height: 72px;
 }
-.preschool-theme-emoji {
+.pack-emoji {
   flex-shrink: 0;
   font-size: 25px;
 }
-.preschool-theme-copy {
+.pack-copy {
   display: flex;
   min-width: 0;
   flex: 1;
   flex-direction: column;
   gap: 4px;
 }
-.preschool-theme-copy > span {
+.pack-copy > span {
   line-height: 1.5;
 }
-.preschool-theme-count {
+.pack-count {
   flex-shrink: 0;
   align-self: flex-start;
   border-radius: 10px;
@@ -2527,7 +2751,7 @@ td small {
   color: #6b8657;
   white-space: nowrap;
 }
-.preschool-theme-options button.selected .preschool-theme-count {
+.pack-options button.selected .pack-count {
   background: #deebd0;
   color: #466834;
 }
@@ -2668,13 +2892,13 @@ td small {
   .level-options {
     gap: 7px;
   }
-  .preschool-intro {
+  .pack-intro {
     padding: 11px;
   }
-  .preschool-theme-options {
+  .pack-options {
     grid-template-columns: 1fr;
   }
-  .preschool-theme-options button {
+  .pack-options button {
     min-height: 65px;
     padding: 10px;
   }
@@ -2921,18 +3145,18 @@ td small {
   }
   .grade-options button,
   .level-options button,
-  .preschool-theme-options button {
+  .pack-options button {
     padding: 15px 10px;
   }
-  .preschool-intro,
-  .preschool-theme-copy > span {
+  .pack-intro,
+  .pack-copy > span {
     font-size: 12px;
   }
-  .preschool-theme-options {
+  .pack-options {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
-  .preschool-theme-options strong {
+  .pack-options strong {
     font-size: 15px;
   }
   .grade-options strong,
@@ -3392,6 +3616,12 @@ td small {
     padding: 0 16px;
     font-size: 12px;
   }
+  /* A disabled save must not look tappable while a style is only being tried on. */
+  .profile-mobile-bar .button:disabled {
+    background: #dfe7d2;
+    color: #98a58b;
+    opacity: 1;
+  }
   .profile-page .avatar-layout {
     grid-template-columns: 1fr;
     gap: 6px;
@@ -3528,4 +3758,40 @@ td small {
   margin-top: 2px;
   color: #9a6b12;
   font-size: 10px;
+}
+
+@media (max-width: 760px) {
+  /* Phones: the confirm card docks to the bottom so the preview above stays clear. */
+  .unlock-overlay {
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+    background: linear-gradient(to top, #1f382cb3 0%, #1f382c5c 36%, #1f382c00 64%);
+    pointer-events: none;
+  }
+  .unlock-card {
+    width: 100%;
+    max-height: 74dvh;
+    padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+    border: 0;
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -24px 60px -24px #1b3b3980;
+  }
+  .unlock-card h2 {
+    margin-bottom: 6px;
+    font-size: 16px;
+  }
+  .unlock-card p {
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  .unlock-card .dialog-actions {
+    margin-top: 12px;
+  }
+  .unlock-note-long {
+    display: none;
+  }
+  .unlock-note-short {
+    display: inline;
+  }
 }

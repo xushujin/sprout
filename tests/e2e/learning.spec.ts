@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { derivePasswordProof } from '../../shared/password';
+import { answerCorrectly, answerWrong } from './quiz-helper';
 
 const password = 'E2e-only-password-123';
 async function signIn(page: Page, username: string, remember = true) {
@@ -68,12 +69,17 @@ test('teacher → student → auto login → offline round → retry → snapsho
   });
   await context.setOffline(true);
   await page.getByRole('button', { name: '开始一轮学习' }).click();
-  const chinese = ['苹果', '香蕉', '橙子', '葡萄', '梨'];
+  const words = [
+    ['apple', '苹果'],
+    ['banana', '香蕉'],
+    ['orange', '橙子'],
+    ['grape', '葡萄'],
+    ['pear', '梨'],
+  ] as const;
   for (let i = 0; i < 5; i++) {
     await page.getByRole('button', { name: '记住啦，来挑战' }).click();
-    if (i === 0)
-      await page.locator('.answer-option').filter({ hasNotText: chinese[i] }).first().click();
-    else await page.getByRole('button', { name: `选择${chinese[i]}`, exact: true }).click();
+    if (i === 0) await answerWrong(page, ...words[i]);
+    else await answerCorrectly(page, ...words[i]);
     if (i === 1) await page.screenshot({ path: 'test-results/quiz-mobile.png', fullPage: true });
     await page.getByRole('button', { name: i === 4 ? '收获本轮成长' : '下一个单词' }).click();
   }
@@ -171,9 +177,17 @@ test('quota errors and 200 HTML keep the queue; reload retries the identical rou
     );
   });
   await page.getByRole('button', { name: '开始一轮学习' }).click();
-  for (const [i, word] of ['苹果', '香蕉', '橙子', '葡萄', '梨'].entries()) {
+  for (const [i, pair] of (
+    [
+      ['apple', '苹果'],
+      ['banana', '香蕉'],
+      ['orange', '橙子'],
+      ['grape', '葡萄'],
+      ['pear', '梨'],
+    ] as const
+  ).entries()) {
     await page.getByRole('button', { name: '记住啦，来挑战' }).click();
-    await page.getByRole('button', { name: `选择${word}`, exact: true }).click();
+    await answerCorrectly(page, ...pair);
     await page.getByRole('button', { name: i === 4 ? '收获本轮成长' : '下一个单词' }).click();
   }
   await expect(page.getByText('已在本机保存 1 轮，稍后同步')).toBeVisible();

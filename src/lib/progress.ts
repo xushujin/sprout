@@ -1,5 +1,6 @@
 import type { ScoreEvent } from '../../shared/types';
 import { WORDS, type Word } from '../data/words';
+import { quizKindAt, type QuizKind } from './quiz';
 
 interface WordProgress {
   seen: number;
@@ -12,8 +13,9 @@ export interface Progress {
   bookId?: string;
   sound?: { music: boolean; effects: boolean };
   words: Record<string, WordProgress>;
-  // Preschool topics intentionally combine general vocabulary in different contexts.
-  // Keep their mistakes separate from general-round progress; IDs remain stable per topic.
+  // Preschool themes and topic packs intentionally combine general vocabulary in
+  // different contexts. Keep their mistakes separate from general-round progress;
+  // the map is keyed by book id, so each collection has a stable review pool.
   preschoolWords?: Record<string, Record<string, WordProgress>>;
   pending: ScoreEvent[];
   rounds: number;
@@ -26,6 +28,7 @@ export interface RoundWord {
   word: Word;
   isNew: boolean;
   wasMistake: boolean;
+  quiz: QuizKind;
 }
 const memory = new Map<string, Progress>();
 const unsaved = new Set<string>();
@@ -103,14 +106,15 @@ export function makeRound(
       return priority(pa) - priority(pb) || (pa?.lastSeen ?? 0) - (pb?.lastSeen ?? 0);
     })
     .slice(0, 5)
-    .map((word) => ({
+    .map((word, index) => ({
       word,
       isNew: !states[word.id]?.seen,
       wasMistake: !!states[word.id]?.needsReview,
+      quiz: quizKindAt(scope, index, word),
     }));
 }
 
-export function optionsFor(word: Word, words: Word[] = WORDS): Word[] {
+export function optionsFor(word: Word, words: Word[] = WORDS, mode: 'zh' | 'en' = 'zh'): Word[] {
   const shuffle = (list: Word[]) => {
     for (let i = list.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -118,21 +122,22 @@ export function optionsFor(word: Word, words: Word[] = WORDS): Word[] {
     }
     return list;
   };
-  // Several words can share one emoji (weekdays, greetings), so the options
-  // must also be distinct by picture; otherwise two answers look identical.
+  // Several words can share one emoji (weekdays, greetings), so picture options
+  // must also be distinct by picture; English options must be distinct by word.
   const visual = (item: Word) => item.image || item.emoji || `letter:${item.en.charAt(0)}`;
+  const label = (item: Word) => (mode === 'en' ? item.en.toLowerCase() : item.zh);
   const other = shuffle(words.filter((w) => w.id !== word.id));
-  const seenZh = new Set([word.zh]);
+  const seenLabels = new Set([label(word)]);
   const seenVisual = new Set([visual(word)]);
   const chosen: Word[] = [];
   const take = (allowSharedVisual: boolean) => {
     for (const item of other) {
       if (chosen.length === 2) return;
       if (chosen.some((picked) => picked.id === item.id)) continue;
-      if (seenZh.has(item.zh)) continue;
-      if (!allowSharedVisual && seenVisual.has(visual(item))) continue;
+      if (seenLabels.has(label(item))) continue;
+      if (mode === 'zh' && !allowSharedVisual && seenVisual.has(visual(item))) continue;
       chosen.push(item);
-      seenZh.add(item.zh);
+      seenLabels.add(label(item));
       seenVisual.add(visual(item));
     }
   };
