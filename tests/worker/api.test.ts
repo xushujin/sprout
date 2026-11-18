@@ -78,6 +78,7 @@ beforeAll(async () => {
 });
 beforeEach(async () => {
   await env.DB.batch([
+    env.DB.prepare('DELETE FROM gift_events'),
     env.DB.prepare('DELETE FROM spend_events'),
     env.DB.prepare('DELETE FROM score_events'),
     env.DB.prepare('DELETE FROM sessions'),
@@ -555,6 +556,109 @@ describe('avatar and shop', () => {
     };
     // 45 earned this week minus a 120 spend clamps to 0; lifetime is 500 - 120.
     expect(snapshot.entries[0]).toMatchObject({ points: 0, rounds: 1, lifetime_points: 380 });
+  });
+});
+
+describe('admin point gifts', () => {
+  it('gifts points once and ignores a retried request id', async () => {
+    const admin = await login('admin');
+    const first = await request(
+      `/admin/students/${studentId}/points`,
+      { id: 'gift-test-0001', amount: 250, note: '课堂奖励' },
+      admin.cookie,
+    );
+    expect(first.status).toBe(200);
+    expect(await first.json()).toMatchObject({ accepted: true, points: 0, gift_points: 250 });
+
+    const again = await request(
+      `/admin/students/${studentId}/points`,
+      { id: 'gift-test-0001', amount: 250, note: '重复提交' },
+      admin.cookie,
+    );
+    expect(again.status).toBe(200);
+    expect(await again.json()).toMatchObject({ accepted: false, points: 0, gift_points: 250 });
+
+    const gifts = await env.DB.prepare('SELECT amount, note, admin_id FROM gift_events').all();
+    expect(gifts.results).toEqual([{ amount: 250, note: '课堂奖励', admin_id: adminId }]);
+
+    const list = (await (await request('/admin/students', undefined, admin.cookie)).json()) as {
+      students: Student[];
+    };
+    expect(list.students[0].points).toBe(0);
+    expect(list.students[0].gift_points).toBe(250);
+  });
+
+  it('spends reward points before growth points', async () => {
+    const auth = await login();
+    await env.DB.prepare('UPDATE users SET gift_points = 700, lifetime_points = 1000 WHERE id = ?')
+      .bind(studentId)
+      .run();
+
+    const unlock = await request(
+      '/wardrobe/unlock',
+      { kind: 'hair', option: 'ponytail' },
+      auth.cookie,
+    );
+    expect(unlock.status).toBe(200);
+    expect(await unlock.json()).toMatchObject({
+      price: 1000,
+      points: 700,
+      gift_points: 0,
+      spent_points: 300,
+      spent_gift: 700,
+    });
+    const spend = await env.DB.prepare(
+      "SELECT item_id, amount FROM spend_events WHERE item_id = 'hair:ponytail'",
+    ).first();
+    expect(spend).toEqual({ item_id: 'hair:ponytail', amount: 300 });
+  });
+
+  it('never turns reward points into growth points or a weekly deduction', async () => {
+    const auth = await login();
+    await env.DB.prepare('UPDATE users SET gift_points = 3000, lifetime_points = 0 WHERE id = ?')
+      .bind(studentId)
+      .run();
+    const unlock = await request(
+      '/wardrobe/unlock',
+      { kind: 'outfit', option: 'royal' },
+      auth.cookie,
+    );
+    expect(unlock.status).toBe(200);
+    expect(await unlock.json()).toMatchObject({
+      points: 0,
+      gift_points: 0,
+      spent_points: 0,
+      spent_gift: 3000,
+    });
+    const spend = await env.DB.prepare('SELECT COUNT(*) AS count FROM spend_events').first();
+    expect(spend).toEqual({ count: 0 });
+  });
+
+  it('rejects student callers, invalid amounts and unknown students', async () => {
+    const student = await login();
+    const forbidden = await request(
+      `/admin/students/${studentId}/points`,
+      { id: 'gift-test-0002', amount: 10 },
+      student.cookie,
+    );
+    expect(forbidden.status).toBe(403);
+
+    const admin = await login('admin');
+    for (const amount of [0, -1, 1.5, 10_001, '10']) {
+      const invalid = await request(
+        `/admin/students/${studentId}/points`,
+        { id: 'gift-test-0003', amount },
+        admin.cookie,
+      );
+      expect(invalid.status).toBe(422);
+    }
+
+    const missing = await request(
+      '/admin/students/00000000-0000-4000-8000-000000000099/points',
+      { id: 'gift-test-0004', amount: 10 },
+      admin.cookie,
+    );
+    expect(missing.status).toBe(404);
   });
 });
 

@@ -140,13 +140,19 @@ async function currentUser(request: Request, env: Env): Promise<User | null> {
   if (!token || !/^[0-9a-f]{64}$/.test(token)) return null;
   const tokenHash = await hashToken(token);
   const row = await env.DB.prepare(
-    `SELECT u.id, u.username, u.display_name, u.role, u.lifetime_points AS points, u.avatar, u.owned_items, u.owned_styles
+    `SELECT u.id, u.username, u.display_name, u.role, u.lifetime_points AS points, u.gift_points, u.avatar, u.owned_items, u.owned_styles
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = ? AND s.expires_at > ?`,
   )
     .bind(tokenHash, Math.floor(Date.now() / 1000))
     .first<
-      User & { points: number; avatar: string | null; owned_items: string; owned_styles: string }
+      User & {
+        points: number;
+        gift_points: number;
+        avatar: string | null;
+        owned_items: string;
+        owned_styles: string;
+      }
     >();
   if (!row) return null;
   return {
@@ -155,6 +161,7 @@ async function currentUser(request: Request, env: Env): Promise<User | null> {
     display_name: row.display_name,
     role: row.role,
     points: Number(row.points),
+    gift_points: Number(row.gift_points),
     avatar: parseAvatar(row.avatar),
     owned_items: parseOwned(row.owned_items),
     unlocked_styles: parseOwnedStyles(row.owned_styles),
@@ -306,28 +313,45 @@ async function unlockStyle(request: Request, env: Env) {
   const price = stylePrice(kind, option);
   const nextOwned = [...owned, key];
   const now = Math.floor(Date.now() / 1000);
-  // Same pattern as decorations: the conditional UPDATE and the guarded spend
-  // insert share one transaction, so the balance can never go negative and a
-  // failed purchase leaves no spend row behind.
-  const [updated] = await env.DB.batch([
+  const spendId = crypto.randomUUID();
+  // Reward points are spent first; only the remainder touches growth points and
+  // therefore the weekly net. Both statements read the same pre-update row, so
+  // the recorded spend always matches the split, and a failed payment leaves no
+  // spend row behind.
+  const [, updated] = await env.DB.batch([
     env.DB.prepare(
-      'UPDATE users SET lifetime_points = lifetime_points - ?, owned_styles = ? WHERE id = ? AND lifetime_points >= ?',
-    ).bind(price, JSON.stringify(nextOwned), auth.user.id, price),
+      `INSERT INTO spend_events(id, user_id, item_id, amount, created_at)
+       SELECT ?, ?, ?, MAX(? - gift_points, 0), ? FROM users
+       WHERE id = ? AND gift_points + lifetime_points >= ?
+         AND MAX(? - gift_points, 0) > 0`,
+    ).bind(spendId, auth.user.id, key, price, now, auth.user.id, price, price),
     env.DB.prepare(
-      'INSERT INTO spend_events(id, user_id, item_id, amount, created_at) SELECT ?, ?, ?, ?, ? WHERE changes() = 1',
-    ).bind(crypto.randomUUID(), auth.user.id, key, price, now),
+      `UPDATE users SET gift_points = gift_points - MIN(gift_points, ?),
+        lifetime_points = lifetime_points - MAX(? - gift_points, 0),
+        owned_styles = ?
+       WHERE id = ? AND gift_points + lifetime_points >= ?`,
+    ).bind(price, price, JSON.stringify(nextOwned), auth.user.id, price),
   ]);
   if (updated.meta.changes !== 1)
     return error('积分不够，再攒一攒吧。', 402, 'INSUFFICIENT_POINTS');
-  const account = await env.DB.prepare('SELECT lifetime_points AS points FROM users WHERE id = ?')
+  const account = await env.DB.prepare(
+    'SELECT lifetime_points AS points, gift_points FROM users WHERE id = ?',
+  )
     .bind(auth.user.id)
-    .first<{ points: number }>();
+    .first<{ points: number; gift_points: number }>();
+  const spend = await env.DB.prepare('SELECT amount FROM spend_events WHERE id = ?')
+    .bind(spendId)
+    .first<{ amount: number }>();
+  const spentPoints = Number(spend?.amount ?? 0);
   return json({
     ok: true,
     kind,
     option,
     price,
     points: Number(account?.points ?? 0),
+    gift_points: Number(account?.gift_points ?? 0),
+    spent_points: spentPoints,
+    spent_gift: price - spentPoints,
     unlocked_styles: nextOwned,
   });
 }
@@ -353,13 +377,14 @@ async function login(request: Request, env: Env) {
 
   const user = validUsername(username)
     ? await env.DB.prepare(
-        'SELECT id, username, display_name, role, password_hash, lifetime_points AS points, avatar, owned_items, owned_styles FROM users WHERE username = ? COLLATE NOCASE',
+        'SELECT id, username, display_name, role, password_hash, lifetime_points AS points, gift_points, avatar, owned_items, owned_styles FROM users WHERE username = ? COLLATE NOCASE',
       )
         .bind(username)
         .first<
           User & {
             password_hash: string;
             points: number;
+            gift_points: number;
             avatar: string | null;
             owned_items: string;
             owned_styles: string;
@@ -395,6 +420,7 @@ async function login(request: Request, env: Env) {
     display_name: user.display_name,
     role: user.role,
     points: Number(user.points),
+    gift_points: Number(user.gift_points),
     avatar: parseAvatar(user.avatar),
     owned_items: parseOwned(user.owned_items),
     unlocked_styles: parseOwnedStyles(user.owned_styles),
@@ -555,6 +581,57 @@ async function createStudent(request: Request, env: Env) {
   return json({ ok: true }, 201);
 }
 
+async function giftPoints(request: Request, env: Env, studentId: string) {
+  const auth = await requireUser(request, env, 'admin');
+  if ('response' in auth) return auth.response;
+  if (!(await rateLimit(env.WRITE_LIMITER, auth.user.id)))
+    return error('操作太频繁，请稍后再试。', 429);
+  if (!/^[0-9a-f-]{36}$/i.test(studentId)) return error('学生编号不正确。', 422);
+  let input: Record<string, unknown>;
+  try {
+    input = await body(request);
+  } catch {
+    return error('请求格式不正确。', 400);
+  }
+  const id =
+    typeof input.id === 'string' && /^[a-zA-Z0-9_-]{10,80}$/.test(input.id) ? input.id : null;
+  const amount =
+    typeof input.amount === 'number' &&
+    Number.isInteger(input.amount) &&
+    input.amount >= 1 &&
+    input.amount <= 10_000
+      ? input.amount
+      : null;
+  if (!id || amount === null) return error('赠送积分需为 1–10000 的整数。', 422, 'INVALID_GIFT');
+  const note = typeof input.note === 'string' ? input.note.trim().slice(0, 40) : '';
+  const now = Math.floor(Date.now() / 1000);
+  // The INSERT selects the student, so an unknown or admin account adds nothing.
+  // A retried request keeps the same id and cannot credit the points twice.
+  const [inserted] = await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO gift_events(id, user_id, admin_id, amount, note, created_at)
+       SELECT ?, id, ?, ?, ?, ? FROM users WHERE id = ? AND role = 'student'
+       ON CONFLICT(id) DO NOTHING`,
+    ).bind(id, auth.user.id, amount, note, now, studentId),
+    env.DB.prepare(
+      'UPDATE users SET gift_points = gift_points + ? WHERE id = ? AND role = ? AND changes() = 1',
+    ).bind(amount, studentId, 'student'),
+  ]);
+  const account = await env.DB.prepare(
+    "SELECT lifetime_points AS points, gift_points FROM users WHERE id = ? AND role = 'student'",
+  )
+    .bind(studentId)
+    .first<{ points: number; gift_points: number }>();
+  if (!account) return error('找不到学生。', 404);
+  return json({
+    ok: true,
+    accepted: inserted.meta.changes === 1,
+    amount,
+    points: Number(account.points),
+    gift_points: Number(account.gift_points),
+  });
+}
+
 async function resetStudentPassword(request: Request, env: Env, studentId: string) {
   const auth = await requireUser(request, env, 'admin');
   if ('response' in auth) return auth.response;
@@ -646,6 +723,7 @@ async function listStudents(request: Request, env: Env) {
     COALESCE(t.correct_count, 0) AS correct_count,
     COALESCE(t.total_count, 0) AS total_count,
     COALESCE(u.lifetime_points, 0) AS points,
+    COALESCE(u.gift_points, 0) AS gift_points,
     COALESCE(t.earned_points, 0) AS earned_points,
     COALESCE(w.week_rounds, 0) AS week_rounds,
     COALESCE(w.week_points, 0) AS week_points,
@@ -782,6 +860,8 @@ async function route({ request, env }: Context) {
   const resetMatch = path.match(/^\/admin\/students\/([0-9a-f-]+)\/password$/i);
   if (request.method === 'POST' && resetMatch)
     return resetStudentPassword(request, env, resetMatch[1]);
+  const giftMatch = path.match(/^\/admin\/students\/([0-9a-f-]+)\/points$/i);
+  if (request.method === 'POST' && giftMatch) return giftPoints(request, env, giftMatch[1]);
   const usernameMatch = path.match(/^\/admin\/students\/([0-9a-f-]+)\/username$/i);
   if (request.method === 'PATCH' && usernameMatch)
     return changeStudentUsername(request, env, usernameMatch[1]);

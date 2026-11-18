@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   role TEXT NOT NULL CHECK(role IN ('admin', 'student')),
   created_at INTEGER NOT NULL,
   lifetime_points INTEGER NOT NULL DEFAULT 0,
+  gift_points INTEGER NOT NULL DEFAULT 0,
   avatar TEXT,
   owned_items TEXT NOT NULL DEFAULT '[]',
   owned_styles TEXT NOT NULL DEFAULT '[]'
@@ -48,3 +49,13 @@ CREATE TABLE IF NOT EXISTS spend_events (
 );
 CREATE INDEX IF NOT EXISTS spend_events_week ON spend_events(created_at, user_id);
 CREATE INDEX IF NOT EXISTS spend_events_user_week ON spend_events(user_id, created_at);
+
+CREATE TABLE IF NOT EXISTS gift_events (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  admin_id TEXT NOT NULL,
+  amount INTEGER NOT NULL CHECK(amount > 0),
+  note TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS gift_events_user ON gift_events(user_id, created_at);

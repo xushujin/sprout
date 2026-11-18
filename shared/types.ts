@@ -6,6 +6,8 @@ export interface User {
   display_name: string;
   role: 'admin' | 'student';
   points?: number;
+  /** Reward balance from teachers; spendable on avatar cosmetics only. */
+  gift_points?: number;
   avatar?: AvatarConfig | null;
   owned_items?: string[];
   /** Unlocked paid cosmetics, as `hair:curly` / `skin:deep` / `outfit:dress`. */

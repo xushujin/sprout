@@ -148,7 +148,7 @@ export function App() {
       ? [{ id: 'admin' as const, label: '老师的花园', icon: 'shield' as const }, nav[2]]
       : nav;
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${page === 'profile' ? 'profile-mode' : ''}`.trim()}>
       <aside className="sidebar">
         <a href={user.role === 'admin' ? '/admin' : '/'} className="brand">
           <span className="brand-symbol">

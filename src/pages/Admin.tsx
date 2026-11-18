@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { Student } from '../../shared/types';
 import { api } from '../lib/api';
 import { Icon } from '../components/Icons';
@@ -17,6 +17,16 @@ export function Admin() {
   const [resetId, setResetId] = useState<string | null>(null);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [usernameId, setUsernameId] = useState<string | null>(null);
+  const [giftStudent, setGiftStudent] = useState<Student | null>(null);
+  const [giftAmount, setGiftAmount] = useState('100');
+  const [giftNote, setGiftNote] = useState('');
+  const giftDialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = giftDialog.current;
+    if (!dialog) return;
+    if (giftStudent && !dialog.open) dialog.showModal();
+    if (!giftStudent && dialog.open) dialog.close();
+  }, [giftStudent]);
   async function load(next?: string) {
     setBusy(true);
     setError('');
@@ -108,6 +118,56 @@ export function Admin() {
       );
       setUsernameId(null);
       setMessage('登录账号已更新，学生旧会话已撤销；请用新账号和新密码告知学生。');
+    } catch (cause) {
+      setError((cause as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  function openGift(student: Student) {
+    setGiftStudent(student);
+    setGiftAmount('100');
+    setGiftNote('');
+    setRenameId(null);
+    setUsernameId(null);
+    setResetId(null);
+    setError('');
+    setMessage('');
+  }
+  async function gift(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!giftStudent) return;
+    const amount = Number(giftAmount);
+    if (!Number.isInteger(amount) || amount < 1 || amount > 10_000) {
+      setError('赠送积分需为 1–10000 的整数。');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const result = await api<{
+        accepted: boolean;
+        points: number;
+        gift_points: number;
+      }>(
+        `/admin/students/${giftStudent.id}/points`,
+        { id: crypto.randomUUID(), amount, note: giftNote.trim() },
+        { method: 'POST' },
+      );
+      setStudents((items) =>
+        items.map((item) =>
+          item.id === giftStudent.id
+            ? { ...item, points: result.points, gift_points: result.gift_points }
+            : item,
+        ),
+      );
+      setMessage(
+        result.accepted
+          ? `已赠送 ${amount} 奖励积分给 ${giftStudent.display_name}。`
+          : '这笔赠送已经记录过，未重复加分。',
+      );
+      setGiftStudent(null);
     } catch (cause) {
       setError((cause as Error).message);
     } finally {
@@ -264,7 +324,9 @@ export function Admin() {
                   </td>
                   <td className="points-cell">
                     {s.points}
-                    <small className="cell-note">本周 +{s.week_points}</small>
+                    <small className="cell-note">
+                      本周 +{s.week_points} · 奖励 {s.gift_points ?? 0}
+                    </small>
                   </td>
                   <td>
                     {renameId === s.id ? (
@@ -328,6 +390,9 @@ export function Admin() {
                       </form>
                     ) : (
                       <div className="row-actions">
+                        <button className="button small primary" onClick={() => openGift(s)}>
+                          赠送积分
+                        </button>
                         <button
                           className="button small secondary"
                           onClick={() => {
@@ -393,6 +458,73 @@ export function Admin() {
           分钟快照刷新。
         </p>
       </section>
+
+      <dialog
+        ref={giftDialog}
+        className="gift-dialog"
+        aria-labelledby="gift-title"
+        onClose={() => setGiftStudent(null)}
+        onClick={(event) => {
+          if (event.target === giftDialog.current) setGiftStudent(null);
+        }}
+      >
+        {giftStudent && (
+          <form className="gift-form" onSubmit={(event) => void gift(event)}>
+            <h2 id="gift-title">赠送积分</h2>
+            <p>
+              赠送给 <strong>{giftStudent.display_name}</strong>
+              。只增加当前成长积分，不计入本周学习积分； 总排行榜在下次 30 分钟快照后更新。
+            </p>
+            <label>
+              积分数量
+              <input
+                type="number"
+                min={1}
+                max={10000}
+                step={1}
+                inputMode="numeric"
+                value={giftAmount}
+                onChange={(event) => setGiftAmount(event.target.value)}
+                required
+              />
+            </label>
+            <div className="gift-presets">
+              {[50, 100, 500].map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className="button small secondary"
+                  onClick={() => setGiftAmount(String(value))}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+            <label>
+              原因（可选）
+              <input
+                maxLength={40}
+                value={giftNote}
+                onChange={(event) => setGiftNote(event.target.value)}
+                placeholder="例如 课堂表现奖励"
+              />
+            </label>
+            <div className="dialog-actions">
+              <button
+                type="button"
+                className="button secondary"
+                disabled={busy}
+                onClick={() => setGiftStudent(null)}
+              >
+                取消
+              </button>
+              <button className="button primary" disabled={busy}>
+                {busy ? '赠送中…' : '确认赠送'}
+              </button>
+            </div>
+          </form>
+        )}
+      </dialog>
     </div>
   );
 }

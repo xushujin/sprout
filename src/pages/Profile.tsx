@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { User } from '../../shared/types';
 import {
   DEFAULT_AVATAR,
@@ -20,6 +20,37 @@ interface PendingStyle {
   price: number;
 }
 
+type EditorGroup = 'gender' | StyleKind;
+
+const EDITOR_GROUPS: { id: EditorGroup; label: string }[] = [
+  { id: 'gender', label: '性别' },
+  { id: 'hair', label: '发型' },
+  { id: 'skin', label: '肤色' },
+  { id: 'outfit', label: '服饰' },
+];
+
+// Phones show a compact single-screen editor: one option group at a time,
+// no page chrome, and a preview sized to the available height.
+function useViewport() {
+  const query = '(max-width: 760px)';
+  const read = () => ({
+    compact: window.matchMedia(query).matches,
+    tall: window.innerHeight >= 720,
+  });
+  const [viewport, setViewport] = useState(read);
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const update = () => setViewport(read());
+    media.addEventListener('change', update);
+    window.addEventListener('resize', update);
+    return () => {
+      media.removeEventListener('change', update);
+      window.removeEventListener('resize', update);
+    };
+  }, []);
+  return viewport;
+}
+
 export function Profile({
   user,
   onUserChange,
@@ -31,12 +62,15 @@ export function Profile({
 }) {
   const [avatar, setAvatar] = useState<AvatarConfig>(user.avatar ?? DEFAULT_AVATAR);
   const [points, setPoints] = useState(user.points ?? 0);
+  const [gift, setGift] = useState(user.gift_points ?? 0);
   const [unlocked, setUnlocked] = useState<string[]>(user.unlocked_styles ?? []);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [pending, setPending] = useState<PendingStyle | null>(null);
+  const [group, setGroup] = useState<EditorGroup>('hair');
+  const viewport = useViewport();
   const firstTime = !user.avatar;
   const unlockedSet = new Set(unlocked);
   // While the unlock dialog is open the avatar previews the option for free.
@@ -100,19 +134,25 @@ export function Profile({
     setError('');
     setMessage('');
     try {
-      const result = await api<{ points: number; unlocked_styles: string[] }>(
-        '/wardrobe/unlock',
-        { kind: pending.kind, option: pending.option },
-        { method: 'POST' },
-      );
+      const result = await api<{
+        points: number;
+        gift_points: number;
+        spent_points: number;
+        unlocked_styles: string[];
+      }>('/wardrobe/unlock', { kind: pending.kind, option: pending.option }, { method: 'POST' });
       const next = { ...avatar, [pending.kind]: pending.option };
       setPoints(result.points);
+      setGift(result.gift_points);
       setUnlocked(result.unlocked_styles);
       setPending(null);
-      onSpend(pending.price);
+      onSpend(result.spent_points);
       await persist(
         next,
-        { points: result.points, unlocked_styles: result.unlocked_styles },
+        {
+          points: result.points,
+          gift_points: result.gift_points,
+          unlocked_styles: result.unlocked_styles,
+        },
         `已解锁「${pending.label}」，并换上了新形象。`,
       );
     } catch (cause) {
@@ -123,7 +163,19 @@ export function Profile({
   }
 
   return (
-    <div className="page-enter">
+    <div className="page-enter profile-page">
+      <div className="profile-mobile-bar">
+        <h1>{firstTime ? '选择我的形象' : '我的形象'}</h1>
+        <span className="profile-points-chip">🌱 {points + gift}</span>
+        <button
+          type="button"
+          className="button primary"
+          disabled={!dirty || busy}
+          onClick={() => void persist(avatar)}
+        >
+          {busy ? '保存中…' : '保存'}
+        </button>
+      </div>
       <div className="page-heading">
         <div>
           <span className="eyebrow">MY LITTLE AVATAR</span>
@@ -140,21 +192,41 @@ export function Profile({
       <div className="avatar-layout">
         <section className="avatar-preview-card">
           <div className="avatar-stage">
-            <UserAvatar avatar={previewAvatar} size={190} variant="full" />
+            <UserAvatar
+              avatar={previewAvatar}
+              size={viewport.compact ? (viewport.tall ? 210 : 175) : 190}
+              variant="full"
+            />
             {pending && <span className="avatar-preview-hint">试穿预览 · 未解锁</span>}
           </div>
           <h2>{user.display_name}</h2>
           <p className="avatar-points">
-            可用积分 <strong>{points}</strong>
+            可用积分 <strong>{points + gift}</strong>
           </p>
+          {gift > 0 && <p className="avatar-gift">含奖励积分 {gift}，解锁时优先使用</p>}
           <p className="muted">
             解锁会扣当前积分和本周积分，向日葵可能退回上一阶段。形象会出现在家里、侧栏和这一页。
           </p>
         </section>
 
+        <div className="avatar-tabs" role="tablist" aria-label="形象分类">
+          {EDITOR_GROUPS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={group === tab.id}
+              className={group === tab.id ? 'active' : ''}
+              onClick={() => setGroup(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         <section className="avatar-editor">
           <h2>基础形象</h2>
-          <div className="avatar-group">
+          <div className={`avatar-group ${group === 'gender' ? 'active' : ''}`.trim()}>
             <span className="avatar-label">性别</span>
             <div className="avatar-options">
               {GENDERS.map((item) => (
@@ -170,7 +242,7 @@ export function Profile({
               ))}
             </div>
           </div>
-          <div className="avatar-group">
+          <div className={`avatar-group ${group === 'hair' ? 'active' : ''}`.trim()}>
             <span className="avatar-label">发型</span>
             <div className="avatar-options">
               {HAIR_OPTIONS[avatar.gender].map((item) => {
@@ -191,7 +263,7 @@ export function Profile({
               })}
             </div>
           </div>
-          <div className="avatar-group">
+          <div className={`avatar-group ${group === 'skin' ? 'active' : ''}`.trim()}>
             <span className="avatar-label">肤色</span>
             <div className="avatar-options">
               {SKIN_OPTIONS.map((item) => {
@@ -213,7 +285,7 @@ export function Profile({
               })}
             </div>
           </div>
-          <div className="avatar-group">
+          <div className={`avatar-group ${group === 'outfit' ? 'active' : ''}`.trim()}>
             <span className="avatar-label">基础服饰</span>
             <div className="avatar-options">
               {OUTFIT_OPTIONS[avatar.gender].map((item) => {
@@ -278,9 +350,12 @@ export function Profile({
             <h2 id="unlock-title">解锁「{pending.label}」？</h2>
             <p>
               需要 <strong>{pending.price}</strong>{' '}
-              积分。会同时扣减本周积分，向日葵可能退回上一阶段。
+              积分。优先使用奖励积分，不足部分再扣成长积分和本周积分，向日葵可能退回上一阶段。
             </p>
-            <p className="muted">当前可用积分：{points}</p>
+            <p className="muted">
+              当前可用积分：{points + gift}
+              {gift > 0 ? `（其中奖励 ${gift}，优先使用）` : ''}
+            </p>
             <div className="dialog-actions">
               <button
                 type="button"
@@ -293,10 +368,10 @@ export function Profile({
               <button
                 type="button"
                 className="button primary"
-                disabled={busy || points < pending.price}
+                disabled={busy || points + gift < pending.price}
                 onClick={() => void unlock()}
               >
-                {points < pending.price
+                {points + gift < pending.price
                   ? '积分不够'
                   : busy
                     ? '解锁中…'

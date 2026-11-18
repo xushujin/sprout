@@ -118,15 +118,28 @@ export function optionsFor(word: Word, words: Word[] = WORDS): Word[] {
     }
     return list;
   };
-  // Avoid identical Chinese labels for synonyms/conjugations in textbook lists.
-  const other = shuffle(words.filter((w) => w.id !== word.id && w.zh !== word.zh));
-  const seen = new Set([word.zh]);
-  const distinct = other.filter((item) => {
-    if (seen.has(item.zh)) return false;
-    seen.add(item.zh);
-    return true;
-  });
-  return shuffle([word, ...distinct.slice(0, 2)]);
+  // Several words can share one emoji (weekdays, greetings), so the options
+  // must also be distinct by picture; otherwise two answers look identical.
+  const visual = (item: Word) => item.image || item.emoji || `letter:${item.en.charAt(0)}`;
+  const other = shuffle(words.filter((w) => w.id !== word.id));
+  const seenZh = new Set([word.zh]);
+  const seenVisual = new Set([visual(word)]);
+  const chosen: Word[] = [];
+  const take = (allowSharedVisual: boolean) => {
+    for (const item of other) {
+      if (chosen.length === 2) return;
+      if (chosen.some((picked) => picked.id === item.id)) continue;
+      if (seenZh.has(item.zh)) continue;
+      if (!allowSharedVisual && seenVisual.has(visual(item))) continue;
+      chosen.push(item);
+      seenZh.add(item.zh);
+      seenVisual.add(visual(item));
+    }
+  };
+  take(false);
+  // A tiny custom list may not hold two different pictures; still fill 3 options.
+  if (chosen.length < 2) take(true);
+  return shuffle([word, ...chosen]);
 }
 
 export async function selectBook(userId: string, bookId: string) {
