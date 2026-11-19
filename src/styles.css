@@ -1501,6 +1501,10 @@ input[type='checkbox']:focus-visible {
   font-size: 11px;
   color: #a0ac93;
 }
+.result-note {
+  margin: -18px 0 22px;
+  text-align: center;
+}
 .result-growth {
   display: flex;
   align-items: center;

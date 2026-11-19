@@ -223,7 +223,7 @@ export function Profile({
           </p>
           {gift > 0 && <p className="avatar-gift">含奖励积分 {gift}，解锁时优先使用</p>}
           <p className="muted">
-            解锁会扣当前积分和本周积分，向日葵可能退回上一阶段。形象会出现在家里、侧栏和这一页。
+            解锁会扣当前积分和本周净积分，向日葵可能退回上一阶段。形象会出现在家里、侧栏和这一页。
           </p>
         </section>
 
@@ -396,7 +396,7 @@ export function Profile({
                 <p>
                   需要 <strong>{pending.price}</strong> 积分。
                   <span className="unlock-note-long">
-                    优先使用奖励积分，不足部分再扣成长积分和本周积分，向日葵可能退回上一阶段。
+                    优先使用奖励积分，不足部分再扣成长积分和本周净积分，向日葵可能退回上一阶段。
                   </span>
                   <span className="unlock-note-short">优先扣奖励积分。</span>
                 </p>

@@ -325,7 +325,7 @@ export function Admin() {
                   <td className="points-cell">
                     {s.points}
                     <small className="cell-note">
-                      本周 +{s.week_points} · 奖励 {s.gift_points ?? 0}
+                      本周获得 +{s.week_points} · 奖励 {s.gift_points ?? 0}
                     </small>
                   </td>
                   <td>
@@ -452,8 +452,9 @@ export function Admin() {
           </button>
         )}
         <p className="local-note">
-          完成轮次、新学 / 复习、正确率均为累计值；积分为当前成长积分，本周 +Y
-          为本周学习获得。本周数据在周一 00:00
+          完成轮次、新学 / 复习、正确率均为累计值；积分为当前成长积分，本周获得 +Y
+          为本周学习获得（不扣形象 / 道具消费）。星榜本周净积分 = 本周学习获得 −
+          本周消费。本周数据在周一 00:00
           清零，单独标注。新学词数为学习事件计数，跨设备可能重复；昵称修改后，排行榜在下次 30
           分钟快照刷新。
         </p>

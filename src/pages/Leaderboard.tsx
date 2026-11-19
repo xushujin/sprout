@@ -80,7 +80,7 @@ export function Leaderboard() {
             </div>
             <p className="muted">
               {weekly
-                ? '周一开启新一周 · 每 30 分钟更新 · 点一点看看大家的形象'
+                ? '本周净积分 = 学习获得 − 形象消费 · 每 30 分钟更新 · 点一点看看大家的形象'
                 : '从第一天到现在的累计成长 · 每 30 分钟更新 · 点一点看看大家的形象'}
             </p>
           </div>
@@ -148,7 +148,7 @@ export function Leaderboard() {
                     </div>
                     <strong className="rank-points">
                       {entry.points}
-                      <small> {weekly ? '本周积分' : '成长积分'}</small>
+                      <small> {weekly ? '本周净积分' : '成长积分'}</small>
                     </strong>
                     <span className="rank-chevron" aria-hidden="true">
                       ›
@@ -217,7 +217,7 @@ export function Leaderboard() {
             <div className="rank-dialog-stats">
               <div>
                 <strong>{selected.entry.points}</strong>
-                <span>{weekly ? '本周积分' : '成长积分'}</span>
+                <span>{weekly ? '本周净积分' : '成长积分'}</span>
               </div>
               <div>
                 <strong>{stage.stage.name}</strong>

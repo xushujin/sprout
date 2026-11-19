@@ -464,6 +464,7 @@ export function Learn({
             <span>成长积分</span>
           </div>
         </div>
+        <p className="muted result-note">成长积分已到账；星榜本周净积分每 30 分钟更新一次。</p>
         <div className={`result-growth${stageUp ? ' is-new' : ''}`}>
           <Sunflower variant="badge" stage={grown.index} className="sunflower-result" />
           <p>
