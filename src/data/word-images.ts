@@ -204,9 +204,12 @@ export const WORD_ART_IDS = [
   'young',
 ] as const;
 
+/** Content revision of the illustration set; changes whenever a file does. */
+export const ART_REV = '3c2ef554';
+
 const WORD_ART = new Set<string>(WORD_ART_IDS);
 
 /** Public URL for a word illustration, or undefined when it has none. */
 export function wordImage(id: string): string | undefined {
-  return WORD_ART.has(id) ? `/art/words/${id}.webp` : undefined;
+  return WORD_ART.has(id) ? `/art/words/${id}.webp?v=${ART_REV}` : undefined;
 }

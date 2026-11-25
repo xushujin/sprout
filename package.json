@@ -31,7 +31,8 @@
     "check:subjects": "node scripts/check-subjects.mjs",
     "check:art": "node scripts/check-art.mjs",
     "art:generate": "node scripts/generate-art.mjs",
-    "art:grid": "node scripts/generate-art-grid.mjs"
+    "art:grid": "node scripts/generate-art-grid.mjs",
+    "art:manifest": "node scripts/art-manifest.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",

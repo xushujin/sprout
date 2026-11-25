@@ -4,7 +4,8 @@ import { existsSync, statSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GRADE_BANDS } from '../src/data/curriculum-words.ts';
-import { WORD_ART_IDS } from '../src/data/word-images.ts';
+import { ART_REV, WORD_ART_IDS } from '../src/data/word-images.ts';
+import { artRevision } from './art-manifest.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const problems = [];
@@ -61,6 +62,18 @@ if (problems.length) {
   for (const problem of problems) console.error(`  - ${problem}`);
   process.exit(1);
 }
+
+// A stale revision means a repainted file keeps its old URL, so returning
+// visitors and the edge cache keep showing the previous drawing for a week.
+const actualRev = artRevision(root);
+if (actualRev !== ART_REV) {
+  console.error(
+    `插画版本号过期：src/data/word-images.ts 是 ${ART_REV}，实际文件是 ${actualRev}。` +
+      '请运行 `npm run art:manifest` 更新。',
+  );
+  process.exit(1);
+}
+
 const gradeOne = coverage[1].total - coverage[1].missing.length;
 const gradeTwo = coverage[2].total - coverage[2].missing.length;
 console.log(

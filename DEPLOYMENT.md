@@ -346,3 +346,12 @@
 - 线上复核：首页 200 且指纹为新值；`/art/hero-boy.webp`、`/art/words/{eye,ear,foot}.webp` 均 200、`image/webp`、7 天缓存；393px 模拟男女账号，hero 自然尺寸 720×1080、渲染 351×375，主题 `dataset.theme` 分别为 boy / girl，横向溢出 0、JS 报错 0。
 - 注意：Cloudflare 会注入 `static.cloudflareinsights.com/beacon.min.js`，被现有严格 CSP（`script-src 'self'`）拦截，控制台会出现一条 `csp` 失败请求，属预期行为，不影响功能。
 - 本次 wrangler 的 OAuth 凭据已过期，非交互环境无法刷新，改用 `npx wrangler login --device` 设备码重新授权后发布。
+
+2026-11-25 双主题画风上线（已发布）：
+
+- Pages 生产部署 `e5770d34`，预览地址 `https://e5770d34.wordsprout-5ud.pages.dev`，正式域名已引用新指纹 `main-DU9Jd9-x.js` / `main-B7zQh1xL.css`。仅静态资源，Worker / D1 / KV / Cron 未动。
+- 内容：男孩主题改为圆润玩具机甲（冷钢蓝 + 石墨 + 蜜橙），女孩改为萌趣 chibi 卡通（糖果粉 + 薄荷 + 奶油黄）；重画 `hero-boy` / `hero-girl` / `note-boy` / `note-girl` 四张。对应提交 `e4e93f1`。
+- 发布时发现 `/art/*` 的 7 天缓存会用旧图：文件名固定，重画后 URL 不变，边缘 `cf-cache-status: HIT`、`age` 持续增长，回访浏览器同样会留旧图一周。修法是给插画 URL 加内容版本号——`scripts/art-manifest.mjs` 对 208 个文件算 md5 前 8 位写进 `src/data/word-images.ts` 的 `ART_REV`，`src/lib/art.ts` 与 `wordImage()` 统一拼成 `/art/xxx.webp?v=<rev>`；`check:art` 会比对实际文件与 `ART_REV`，过期即失败，手工替换图片后跑 `npm run art:manifest`。
+- 首次部署 `519cb2fa` 已上传新图但被旧缓存遮住，加版本号后重新部署为 `e5770d34`。线上 `/art/hero-boy.webp?v=3c2ef554` 返回 174050B，与 `dist` 一致。
+- 发布前校验：`check:art`（8 场景 + 200 词图，一年级 100/100、二年级 100/100）、68 项测试、Prettier、`npm run build` 全过。
+- 线上复核：393px 模拟男女账号，hero 请求为 `/art/hero-*.webp?v=3c2ef554`、自然尺寸 720×1080、渲染 351×375，横向溢出 0、JS 报错 0；除已知的 Cloudflare Insights beacon 被 CSP 拦截外无失败请求。

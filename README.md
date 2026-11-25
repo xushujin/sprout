@@ -168,6 +168,8 @@ npm run art:grid                                 # 四宫格批量补齐单词�
 
 提示词在 `assets-src/art/prompts.mjs`，四宫格分组在 `assets-src/art/grid-groups.mjs`。脚本会跳过已存在的文件，中断后直接重跑即可续传；`--force` 才会覆盖。`npm run check:art` 会校验清单与文件、报告各年级覆盖率，`npm run build` 已串入该检查。
 
+插画 URL 都带内容版本号（`/art/hero-boy.webp?v=3c2ef554`）。`/art/*` 设了 7 天缓存，而文件名固定，若不带版本号，重画之后边缘节点和回访浏览器会继续用旧图一周。版本号由清单脚本按文件内容算出，写进 `src/data/word-images.ts` 的 `ART_REV`；`check:art` 会比对实际文件与它，过期就报错。手工替换图片后跑 `npm run art:manifest` 更新即可。
+
 ## 本地运行
 
 使用 **Node.js 22.18+（推荐 Node.js 24 LTS）**。无需登录 Cloudflare，也不需要创建远端数据库。
