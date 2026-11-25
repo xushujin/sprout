@@ -1,5 +1,6 @@
 import type { ScoreEvent } from '../../shared/types';
 import { WORDS, type Word } from '../data/words';
+import { dialogueFor, type DialogueEntry } from '../data/dialogues';
 import { quizKindAt, type QuizKind } from './quiz';
 
 interface WordProgress {
@@ -29,6 +30,8 @@ export interface RoundWord {
   isNew: boolean;
   wasMistake: boolean;
   quiz: QuizKind;
+  /** Present only when the question type is a dialogue. */
+  dialogue?: DialogueEntry;
 }
 const memory = new Map<string, Progress>();
 const unsaved = new Set<string>();
@@ -106,12 +109,16 @@ export function makeRound(
       return priority(pa) - priority(pb) || (pa?.lastSeen ?? 0) - (pb?.lastSeen ?? 0);
     })
     .slice(0, 5)
-    .map((word, index) => ({
-      word,
-      isNew: !states[word.id]?.seen,
-      wasMistake: !!states[word.id]?.needsReview,
-      quiz: quizKindAt(scope, index, word),
-    }));
+    .map((word, index) => {
+      const quiz = quizKindAt(scope, index, word);
+      return {
+        word,
+        isNew: !states[word.id]?.seen,
+        wasMistake: !!states[word.id]?.needsReview,
+        quiz,
+        dialogue: quiz === 'dialogue' ? dialogueFor(scope, word.id) : undefined,
+      };
+    });
 }
 
 export function optionsFor(word: Word, words: Word[] = WORDS, mode: 'zh' | 'en' = 'zh'): Word[] {

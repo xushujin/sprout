@@ -120,6 +120,7 @@ button:active:not(:disabled) {
 }
 .text-button {
   background: transparent;
+  border: 0;
   color: var(--green);
   min-height: 36px;
   padding: 4px 8px;
@@ -1369,6 +1370,99 @@ input[type='checkbox']:focus-visible {
   color: #4f6a44;
   gap: 0;
 }
+@media (max-width: 600px) {
+  /* Long answers take a full-width row instead of breaking inside a column. */
+  .answer-grid--en.answer-grid--stacked {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .answer-grid--en.answer-grid--stacked .answer-option {
+    min-height: 56px;
+    padding: 12px 14px;
+  }
+}
+.dialogue-card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: 100%;
+  max-width: 430px;
+  margin: 4px auto 0;
+  text-align: left;
+}
+.dialogue-row {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+}
+.dialogue-row.right {
+  flex-direction: row-reverse;
+}
+.dialogue-speaker {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #edf3e1;
+  color: #73985f;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  margin-top: 3px;
+}
+.dialogue-row.right .dialogue-speaker {
+  background: #f7ecdf;
+  color: #a97c4e;
+}
+.dialogue-bubble {
+  margin: 0;
+  background: #f4f7ec;
+  border-radius: 14px;
+  padding: 10px 13px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #4f6a44;
+  max-width: calc(100% - 40px);
+}
+.dialogue-row.right .dialogue-bubble {
+  background: #fbf3e7;
+  color: #8a6a45;
+}
+.dialogue-blank-group {
+  white-space: nowrap;
+}
+.dialogue-blank {
+  display: inline-block;
+  min-width: 58px;
+  height: 1.15em;
+  margin: 0 4px;
+  vertical-align: -0.2em;
+  border-radius: 6px;
+  border-bottom: 2px solid #a9c58d;
+  background: #e9f1da;
+}
+.dialogue-blank.filled {
+  border-bottom-color: #88ad70;
+  color: #336b4b;
+  font-weight: 600;
+  padding: 0 6px;
+}
+.dialogue-hint {
+  align-self: center;
+  font-size: 12px;
+  color: #73985f;
+}
+.dialogue-translation {
+  margin: 0;
+  padding: 9px 12px;
+  background: #f6f7ef;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #829082;
+}
 .spell-board {
   display: flex;
   flex-direction: column;
@@ -2366,6 +2460,27 @@ td small {
     padding: 10px 6px;
     min-height: 84px;
     font-size: 16px;
+  }
+  .dialogue-card {
+    gap: 7px;
+  }
+  .dialogue-speaker {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+  .dialogue-bubble {
+    padding: 8px 10px;
+    font-size: 13px;
+    max-width: calc(100% - 32px);
+  }
+  .dialogue-hint {
+    min-height: 32px;
+    font-size: 11px;
+  }
+  .dialogue-translation {
+    padding: 8px 10px;
+    font-size: 11px;
   }
   .spell-board {
     gap: 14px;

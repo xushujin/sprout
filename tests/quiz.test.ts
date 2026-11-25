@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { GENERAL_WORDS, GRADE_BANDS } from '../src/data/curriculum-words';
 import { BOOKS, findBook, loadBookWords, scopeFor } from '../src/data/catalog';
 import { PRESCHOOL_THEMES, preschoolWords } from '../src/data/preschool';
-import { TOPIC_PACKS, TOPIC_PACKS_BY_ID } from '../src/data/topics';
+import { TOPIC_PACKS, TOPIC_PACKS_BY_ID, topicWords } from '../src/data/topics';
+import { DIALOGUES, dialogueFor, dialogueOptions } from '../src/data/dialogues';
 import {
   QUIZ_SECONDS,
   canSpell,
@@ -72,6 +73,7 @@ describe('quiz types', () => {
     );
     for (const kind of quizPlan('general')) expect(QUIZ_SECONDS[kind]).toBeGreaterThan(0);
     expect(QUIZ_SECONDS.spell).toBeGreaterThan(QUIZ_SECONDS.picture);
+    expect(QUIZ_SECONDS.dialogue).toBeGreaterThan(QUIZ_SECONDS.picture);
   });
 
   it('spells short plain words and falls back for hyphens, digits and long words', () => {
@@ -130,6 +132,73 @@ describe('quiz types', () => {
       expect(options).toHaveLength(3);
       expect(new Set(options.map((item) => item.en.toLowerCase())).size).toBe(3);
       expect(options.some((item) => item.id === 'apple')).toBe(true);
+    }
+  });
+});
+
+describe('dialogue questions', () => {
+  const packWords = (packId: string) => new Map(topicWords(packId).map((item) => [item.id, item]));
+
+  it('adds a dialogue slot only to topic packs', () => {
+    expect(quizPlan('topic-animals')[1]).toBe('dialogue');
+    expect(quizPlan('general')).not.toContain('dialogue');
+    expect(quizPlan('preschool-numbers')).not.toContain('dialogue');
+    expect(quizKindAt('topic-animals', 1, packWords('animals').get('cat')!)).toBe('dialogue');
+    // An unreviewed word still falls back instead of showing a blank card.
+    expect(quizKindAt('topic-food', 1, word('zebra', '斑马'))).toBe('reverse');
+  });
+
+  it('covers every word in every pack', () => {
+    for (const pack of TOPIC_PACKS) {
+      const covered = new Set(
+        DIALOGUES.filter((entry) => entry.pack === pack.id).flatMap((entry) => entry.answers),
+      );
+      expect(
+        pack.wordIds.filter((id) => !covered.has(id)),
+        pack.id,
+      ).toEqual([]);
+    }
+    for (const entry of DIALOGUES) {
+      const pack = TOPIC_PACKS_BY_ID.get(entry.pack);
+      expect(pack, entry.id).toBeTruthy();
+      for (const id of [...entry.answers, ...entry.distractors])
+        expect(pack!.wordIds, `${entry.id}/${id}`).toContain(id);
+      for (const id of entry.answers)
+        expect(entry.distractors, `${entry.id}/${id}`).not.toContain(id);
+    }
+  });
+
+  it('keeps exactly one blank in the conversation and in the hint', () => {
+    for (const entry of DIALOGUES) {
+      const blanks = entry.lines
+        .map((line) => (line.text.match(/___/g) ?? []).length)
+        .reduce((total, count) => total + count, 0);
+      expect(blanks, entry.id).toBe(1);
+      expect((entry.translation.match(/___/g) ?? []).length, entry.id).toBe(1);
+    }
+  });
+
+  it('builds three distinct English options containing the answer', () => {
+    for (const entry of DIALOGUES) {
+      const words = packWords(entry.pack);
+      for (const id of entry.answers) {
+        const target = words.get(id)!;
+        for (let run = 0; run < 25; run += 1) {
+          const options = dialogueOptions(entry, target);
+          expect(options, `${entry.id}/${id}`).toHaveLength(3);
+          expect(new Set(options.map((item) => item.en.toLowerCase())).size).toBe(3);
+          expect(options.some((item) => item.id === id)).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('can answer every round word the topic plan asks for', () => {
+    for (const pack of TOPIC_PACKS) {
+      for (const [id, target] of packWords(pack.id)) {
+        expect(dialogueFor(`topic-${pack.id}`, id), `${pack.id}/${id}`).toBeTruthy();
+        expect(quizKindAt(`topic-${pack.id}`, 1, target)).toBe('dialogue');
+      }
     }
   });
 });

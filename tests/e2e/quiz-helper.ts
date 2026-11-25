@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-type QuizKind = 'picture' | 'reverse' | 'listen' | 'spell';
+type QuizKind = 'picture' | 'reverse' | 'listen' | 'spell' | 'dialogue';
 
 async function quizKind(page: Page): Promise<QuizKind> {
   const kind = await page.locator('.quiz-card').getAttribute('data-quiz');

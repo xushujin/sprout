@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { User } from '../../shared/types';
 import type { Word } from '../data/words';
 import { findBook, loadBookWords, scopeFor } from '../data/catalog';
+import { dialogueOptions, type DialogueEntry } from '../data/dialogues';
 import { BookPicker } from '../components/BookPicker';
 import { SoundControls } from '../components/SoundControls';
 import { gameSound, type SoundPreferences } from '../lib/game-sound';
@@ -42,6 +43,68 @@ export function WordPicture({ word }: { word: Word }) {
   );
 }
 
+// One line of a dialogue. The blank stays visible while answering, then shows
+// the reviewed word so the child reads the sentence back in full.
+function DialogueText({ text, fill }: { text: string; fill?: string }) {
+  if (!text.includes('___')) return <>{text}</>;
+  const [before, after] = text.split('___');
+  // Keep the punctuation that closes the sentence on the blank's line, so a
+  // narrow phone never shows a lone period under the bubble.
+  const trailing = after.match(/^([.,!?;:]+)([\s\S]*)$/);
+  const punctuation = trailing?.[1] ?? '';
+  const rest = trailing ? trailing[2] : after;
+  return (
+    <>
+      {before}
+      <span className="dialogue-blank-group">
+        {fill ? (
+          <span className="dialogue-blank filled">{fill}</span>
+        ) : (
+          <span className="dialogue-blank" role="img" aria-label="空格" />
+        )}
+        {punctuation}
+      </span>
+      {rest}
+    </>
+  );
+}
+
+function DialogueCard({
+  entry,
+  fill,
+  showTranslation,
+  toggleTranslation,
+}: {
+  entry: DialogueEntry;
+  fill?: string;
+  showTranslation: boolean;
+  toggleTranslation: () => void;
+}) {
+  return (
+    <div className="dialogue-card" aria-label="英语对话">
+      {entry.lines.map((line, index) => (
+        <div key={index} className={`dialogue-row ${line.speaker === 'B' ? 'right' : ''}`}>
+          <span className="dialogue-speaker" aria-hidden="true">
+            {line.speaker}
+          </span>
+          <p className="dialogue-bubble">
+            <DialogueText text={line.text} fill={line.text.includes('___') ? fill : undefined} />
+          </p>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="text-button dialogue-hint"
+        onClick={toggleTranslation}
+        aria-expanded={showTranslation}
+      >
+        {showTranslation ? '收起中文' : '中文提示'}
+      </button>
+      {showTranslation && <p className="dialogue-translation">{entry.translation}</p>}
+    </div>
+  );
+}
+
 export function Learn({
   user,
   progress,
@@ -74,6 +137,7 @@ export function Learn({
   const [tiles, setTiles] = useState<LetterTile[]>([]);
   const [picked, setPicked] = useState<number[]>([]);
   const [revealWord, setRevealWord] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(false);
   const [audioHint, setAudioHint] = useState('');
   const saving = useRef(false);
   const answered = useRef(false);
@@ -221,6 +285,7 @@ export function Learn({
     setAudioHint('');
     setPicked([]);
     setRevealWord(false);
+    setShowTranslation(false);
     roundActive(true);
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
@@ -235,11 +300,16 @@ export function Learn({
   function quiz() {
     if (!current) return;
     const kind = current.quiz;
-    setOptions(optionsFor(current.word, roundWords, kind === 'picture' ? 'zh' : 'en'));
+    setOptions(
+      kind === 'dialogue' && current.dialogue
+        ? dialogueOptions(current.dialogue, current.word)
+        : optionsFor(current.word, roundWords, kind === 'picture' ? 'zh' : 'en'),
+    );
     setQuizSeconds(QUIZ_SECONDS[kind]);
     setRemaining(QUIZ_SECONDS[kind]);
     setSelected(null);
     setRevealWord(false);
+    setShowTranslation(false);
     if (kind === 'spell') {
       setTiles(spellingTiles(current.word));
       setPicked([]);
@@ -247,7 +317,9 @@ export function Learn({
     answered.current = false;
     started.current = Date.now();
     setPhase('quiz');
-    void play();
+    // A dialogue hides its answer inside the blank; playing the word here would
+    // give it away.
+    if (kind !== 'dialogue') void play();
   }
   function finish(correct: boolean, id: string | null) {
     answered.current = true;
@@ -284,6 +356,7 @@ export function Learn({
       setIndex(index + 1);
       setPhase('study');
       setAudioHint('');
+      setShowTranslation(false);
       return;
     }
     saving.current = true;
@@ -510,6 +583,9 @@ export function Learn({
   if (!current) return null;
   const correct = answers[index];
   const kind = current.quiz;
+  // Three columns cannot hold a long English word on a phone without splitting
+  // it mid-word, so those rounds give each option a full-width row instead.
+  const stackedOptions = kind !== 'picture' && options.some((option) => option.en.length >= 7);
   return (
     <div className="round-page page-enter">
       <div className="round-toolbar">
@@ -654,6 +730,14 @@ export function Learn({
                 <p className="quiz-word quiz-word--zh">{current.word.zh}</p>
               </>
             )}
+            {kind === 'dialogue' && current.dialogue && (
+              <DialogueCard
+                entry={current.dialogue}
+                fill={phase === 'feedback' ? current.word.en : undefined}
+                showTranslation={showTranslation}
+                toggleTranslation={() => setShowTranslation((value) => !value)}
+              />
+            )}
           </div>
           <p className="muted">{quizHint(kind)}</p>
           {audioHint && (
@@ -697,7 +781,11 @@ export function Learn({
               </button>
             </div>
           ) : (
-            <div className={`answer-grid ${kind === 'picture' ? '' : 'answer-grid--en'}`}>
+            <div
+              className={`answer-grid ${kind === 'picture' ? '' : 'answer-grid--en'}${
+                stackedOptions ? ' answer-grid--stacked' : ''
+              }`}
+            >
               {options.map((word) => (
                 <button
                   key={word.id}

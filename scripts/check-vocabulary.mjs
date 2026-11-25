@@ -9,7 +9,8 @@ import {
   GRADE_BANDS,
 } from '../src/data/general-words.ts';
 import { PRESCHOOL_THEMES, PRESCHOOL_WORDS, preschoolWords } from '../src/data/preschool.ts';
-import { TOPIC_PACKS, topicWords } from '../src/data/topics.ts';
+import { TOPIC_PACKS, TOPIC_PACKS_BY_ID, topicWords } from '../src/data/topics.ts';
+import { DIALOGUES } from '../src/data/dialogues.ts';
 
 const approved = new Set(GENERAL_WORDS.map((word) => word.id));
 const audio = JSON.parse(readFileSync('public/audio/sources.json', 'utf8'));
@@ -116,6 +117,102 @@ for (const pack of TOPIC_PACKS) {
   topicItems += pack.wordIds.length;
 }
 assert.equal(topicItems, TOPIC_PACKS.length * 20);
+// Dialogue questions are authored by hand, so the guard checks the mechanics
+// (one blank, in-pack answers, article agreement) that a review can miss.
+// Context words may sit outside the 600-word list; they are read, never tested.
+// Glue is limited to what a beginner can read without being taught: function
+// words, pronouns, very common verbs, and inflected forms of approved words.
+// Content words that carry a question's answer never belong here.
+const DIALOGUE_GLUE = new Set(
+  `a an the this that these those it its it's what what's let's that's i'm don't can't
+  i you he she we they me him her us them my your his our their
+  is am are was were be been do does did have has had can will would
+  and or but so because if not no yes ok
+  in on at by for with from of to into under over up down out off near around
+  here there where when who why how which
+  some any many much more most all both each every little lot
+  very too also just only still then now again after before first next last away inside together
+  one two three four five six seven eight nine ten
+  look see hear smell wash wait want need help make take give find keep borrow play go goes come get put turn start stop
+  say says like likes look looks feel feels smell smells make makes grow grows cook cooks
+  drive drives fly flies run runs fall falls take takes turn turns stay stays work works play plays
+  rain rains snow snows hurt hurts help helps climb give live lives wag wags
+  thank thanks hello hi please sorry ok wow meow woof oink
+  tail ears carrots bananas apples arms eyes legs fingers teeth wings
+  books words rooms cars wheels minutes years lessons flowers leaves
+  box page class colour food fun garden playground plate rails rest sea seat sky song spoon name sure time
+  cloud honey flag flying own
+  top voice water milk day
+  black white green yellow brown pink purple red blue big small long short tall high heavy
+  soft hard fast slow round straight busy dark sweet juicy favourite nice cute strong
+  good bad new old warm cool hot cold hungry quiet safe beautiful`
+    .split(/\s+/)
+    .filter(Boolean),
+);
+const WORD_EN = new Map(GENERAL_WORDS.map((word) => [word.id, word.en]));
+const dialogueIds = new Set();
+const dialogueTexts = new Set();
+const coveredByPack = new Map();
+for (const entry of DIALOGUES) {
+  assert.match(entry.id, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+  assert.ok(!dialogueIds.has(entry.id), `duplicate dialogue id: ${entry.id}`);
+  dialogueIds.add(entry.id);
+  const pack = TOPIC_PACKS_BY_ID.get(entry.pack);
+  assert.ok(pack, `unknown topic pack: ${entry.pack}`);
+  const packIds = new Set(pack.wordIds);
+  assert.ok(entry.lines.length >= 2 && entry.lines.length <= 3, `dialogue length: ${entry.id}`);
+  let blanks = 0;
+  for (const line of entry.lines) {
+    assert.ok(line.speaker === 'A' || line.speaker === 'B', `speaker: ${entry.id}`);
+    assert.ok(line.text.trim(), `empty line: ${entry.id}`);
+    assert.ok(line.text.length <= 60, `line too long: ${entry.id}`);
+    blanks += (line.text.match(/___/g) ?? []).length;
+    for (const token of line.text.toLowerCase().match(/[a-z']+/g) ?? []) {
+      assert.ok(
+        approved.has(token) || DIALOGUE_GLUE.has(token),
+        `dialogue uses unlisted word 「${token}」 in ${entry.id}`,
+      );
+    }
+  }
+  assert.equal(blanks, 1, `exactly one blank: ${entry.id}`);
+  assert.equal((entry.translation.match(/___/g) ?? []).length, 1, `translation blank: ${entry.id}`);
+  assert.ok(entry.answers.length, `no answer: ${entry.id}`);
+  assert.equal(new Set(entry.answers).size, entry.answers.length, `duplicate answer: ${entry.id}`);
+  assert.ok(entry.distractors.length >= 2, `need two distractors: ${entry.id}`);
+  assert.equal(
+    new Set(entry.distractors).size,
+    entry.distractors.length,
+    `duplicate distractor: ${entry.id}`,
+  );
+  for (const id of [...entry.answers, ...entry.distractors]) {
+    assert.ok(approved.has(id), `dialogue word not approved: ${entry.id} -> ${id}`);
+    assert.ok(packIds.has(id), `dialogue word outside pack: ${entry.id} -> ${id}`);
+  }
+  for (const id of entry.answers)
+    assert.ok(!entry.distractors.includes(id), `answer reused as distractor: ${entry.id} -> ${id}`);
+  const text = entry.lines.map((line) => line.text).join(' ');
+  const article = text.match(/\b(a|an)\s+___/i);
+  if (article)
+    for (const id of entry.answers)
+      assert.equal(
+        article[1].toLowerCase() === 'an',
+        /^[aeiou]/i.test(WORD_EN.get(id)),
+        `article a/an mismatch: ${entry.id} -> ${id}`,
+      );
+  const normalized = text.toLowerCase().replace(/\s+/g, ' ');
+  assert.ok(!dialogueTexts.has(normalized), `duplicate dialogue text: ${entry.id}`);
+  dialogueTexts.add(normalized);
+  const covered = coveredByPack.get(entry.pack) ?? new Set();
+  for (const id of entry.answers) covered.add(id);
+  coveredByPack.set(entry.pack, covered);
+}
+for (const [packId, covered] of coveredByPack) {
+  const pack = TOPIC_PACKS_BY_ID.get(packId);
+  assert.ok(
+    covered.size >= Math.ceil(pack.wordIds.length * 0.8),
+    `dialogue coverage below 80%: ${packId} (${covered.size}/${pack.wordIds.length})`,
+  );
+}
 for (const file of readdirSync('public/audio').filter((name) => name.endsWith('.mp3'))) {
   assert.ok(approved.has(file.slice(0, -4)), `unapproved MP3: ${file}`);
 }
@@ -142,5 +239,5 @@ if (process.argv.includes('--dist')) {
     assert.ok(approved.has(file.slice(0, -4)), `unapproved built MP3: ${file}`);
 }
 console.log(
-  `Content verified: ${CURRICULUM_CORE_TARGET}-word curriculum reference target, ${approved.size} attributed MP3s, ${preschoolIds.size} preschool vocabulary items, and ${topicItems} topic-pack entries; no external textbook data.`,
+  `Content verified: ${CURRICULUM_CORE_TARGET}-word curriculum reference target, ${approved.size} attributed MP3s, ${preschoolIds.size} preschool vocabulary items, ${topicItems} topic-pack entries, and ${DIALOGUES.length} reviewed dialogues; no external textbook data.`,
 );
