@@ -335,3 +335,14 @@
 - Pages 部署 `126f2ea0`，预览地址 `https://126f2ea0.wordsprout-5ud.pages.dev`，正式域名 `https://wordsprout.hatim.eu.org` 已引用新指纹 `main-zzmdizdP.js`（CSS 未变，仍为 `main-aeZmePA5.css`）。仅静态资源，Worker、D1、KV、Cron 未动。
 - 线上复核：一年级语文首题「rén → 人」、三年级语文首题「蛛」的偏旁、二年级数学首题时间单位，均符合该年级；整轮 5 题计分仍是一次 `/api/scores`、`total_count=5`，控制台无报错、无横向溢出。
 - 说明：篇目归属以统编版语文、人教版数学为准；不同地区使用的教材版本可能略有差异，若某篇在你所用版本中换了册次，改 `src/data/chinese.ts` 里对应一行的 `grade` 即可重新生成。
+
+2026-11-25 双主题插画与生图接口迁移（已发布）：
+
+- Pages 生产部署 `5f1ffd30`，预览地址 `https://5f1ffd30.wordsprout-5ud.pages.dev`，正式域名 `https://wordsprout.hatim.eu.org` 已引用新指纹 `main-BoNTDm0y.js` / `main-DYAjmfcC.css`。仅静态资源，Worker、D1、KV、Cron 未动，无 API 变更。
+- 首次上线项目自带插画：`public/art/` 共 208 张透明底 WebP，含 8 张场景图（hero-boy / hero-girl 720×1080，三科静物 512²，提示卡与奖章 256²）与 200 张单词图（384²，一年级 100、二年级 100）。`/art/*` 单独设置 `Cache-Control: public, max-age=604800`。
+- 生图接口从 lowseek 的 images 协议迁到 orbitix 的 chat 协议（`/v1/chat/completions`，模型 `gpt-image-2.5-flare`），图片以 base64 data URL 返回；客户端收敛到 `scripts/art-api.mjs`，密钥只放在本机 `.env.art`（0600，已 gitignore）。
+- 本次用新接口重画 8 张场景图，并按下尺寸可读性调整 `eye` / `ear` / `foot` 三张词图。人物类提示词补充 "hand-drawn only (not 3D, not CGI, not a photograph)"，否则四宫格会混入照片级写实。
+- 发布前校验：`check:art` 通过（8 场景 + 200 词图，一年级 100/100、二年级 100/100）、68 项测试、Prettier、`npm run build` 全过。
+- 线上复核：首页 200 且指纹为新值；`/art/hero-boy.webp`、`/art/words/{eye,ear,foot}.webp` 均 200、`image/webp`、7 天缓存；393px 模拟男女账号，hero 自然尺寸 720×1080、渲染 351×375，主题 `dataset.theme` 分别为 boy / girl，横向溢出 0、JS 报错 0。
+- 注意：Cloudflare 会注入 `static.cloudflareinsights.com/beacon.min.js`，被现有严格 CSP（`script-src 'self'`）拦截，控制台会出现一条 `csp` 失败请求，属预期行为，不影响功能。
+- 本次 wrangler 的 OAuth 凭据已过期，非交互环境无法刷新，改用 `npx wrangler login --device` 设备码重新授权后发布。
