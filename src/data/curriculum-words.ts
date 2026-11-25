@@ -1,4 +1,5 @@
 import { WORDS, type Word } from './words.ts';
+import { wordImage } from './word-images.ts';
 
 export const CURRICULUM_CORE_TARGET = 505;
 export const GENERAL_WORD_TARGET = 600;
@@ -623,13 +624,20 @@ function parseBlock(grade: number, block: string): Word[] {
     });
 }
 
+// Illustrations live outside the source so a word can gain art without
+// touching the graded list. Words without a reviewed picture keep the emoji.
+function withArt(word: Word): Word {
+  const image = wordImage(word.id);
+  return image ? { ...word, image } : word;
+}
+
 export const GRADE_BANDS: Record<number, Word[]> = {
-  1: [...WORDS, ...parseBlock(1, firstGradeAdditions)],
-  2: parseBlock(2, secondGradeWords),
-  3: parseBlock(3, thirdGradeWords),
-  4: parseBlock(4, fourthGradeWords),
-  5: parseBlock(5, fifthGradeWords),
-  6: parseBlock(6, sixthGradeWords),
+  1: [...WORDS, ...parseBlock(1, firstGradeAdditions)].map(withArt),
+  2: parseBlock(2, secondGradeWords).map(withArt),
+  3: parseBlock(3, thirdGradeWords).map(withArt),
+  4: parseBlock(4, fourthGradeWords).map(withArt),
+  5: parseBlock(5, fifthGradeWords).map(withArt),
+  6: parseBlock(6, sixthGradeWords).map(withArt),
 };
 
 export const GENERAL_GRADES = [1, 2, 3, 4, 5, 6] as const;

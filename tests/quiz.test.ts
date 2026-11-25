@@ -221,6 +221,19 @@ describe('question bank integrity', () => {
       expect(new Set(preschoolWords(theme.id).map(visual)).size).toBe(theme.wordIds.length);
   });
 
+  it('never mixes painted art and emoji inside one picture question', () => {
+    for (const grade of [1, 2, 3, 4, 5, 6]) {
+      const words = GRADE_BANDS[grade];
+      for (const item of words) {
+        for (let round = 0; round < 3; round += 1) {
+          const options = optionsFor(item, words, 'zh');
+          const kinds = new Set(options.map((option) => Boolean(option.image)));
+          expect(kinds.size, `${grade}/${item.id} 的选项混用了画和 emoji`).toBe(1);
+        }
+      }
+    }
+  });
+
   it('loads the advertised number of words for every book', async () => {
     for (const book of BOOKS) {
       const words = await loadBookWords(book);

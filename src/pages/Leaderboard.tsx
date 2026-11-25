@@ -3,6 +3,8 @@ import type { Leaderboard as Snapshot } from '../../shared/types';
 import { api } from '../lib/api';
 import { growthFor } from '../lib/growth';
 import { Icon } from '../components/Icons';
+import { ArtImage } from '../components/ArtImage';
+import { CELEBRATE_ART } from '../lib/art';
 import { Sunflower } from '../components/Sunflower';
 import { UserAvatar } from '../components/UserAvatar';
 
@@ -53,7 +55,7 @@ export function Leaderboard() {
           <h1>一起发芽，一起长大</h1>
           <p>每一次认真练习，都在闪闪发光。</p>
         </div>
-        <span className="page-emblem">🏆</span>
+        <ArtImage src={CELEBRATE_ART} alt="" className="page-emblem-art" fallback="🏆" eager />
       </div>
       <section className="leaderboard-card">
         <div className="leaderboard-heading">

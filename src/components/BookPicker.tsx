@@ -68,7 +68,7 @@ export function BookPicker({
                 >
                   <strong>{GRADE_LABELS[book.grade! - 1]}</strong>
                   <span>
-                    新增 {book.added} · 累计 {book.count}
+                    <span className="grade-added">新增 {book.added} · </span>累计 {book.count}
                   </span>
                 </button>
               ))}

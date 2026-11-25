@@ -1,7 +1,15 @@
 import type { ScoreEvent } from '../../shared/types';
-import { WORDS, type Word } from '../data/words';
-import { dialogueFor, type DialogueEntry } from '../data/dialogues';
-import { quizKindAt, type QuizKind } from './quiz';
+import { WORDS, type Word } from '../data/words.ts';
+import { dialogueFor, type DialogueEntry } from '../data/dialogues.ts';
+import { chineseQuestions } from '../data/chinese.ts';
+import {
+  findSubjectBook,
+  type SubjectBook,
+  type SubjectId,
+  type SubjectQuestion,
+} from '../data/question.ts';
+import { makeMathQuestion, mathTopics } from './math-quiz.ts';
+import { quizKindAt, type QuizKind } from './quiz.ts';
 
 interface WordProgress {
   seen: number;
@@ -18,6 +26,13 @@ export interface Progress {
   // different contexts. Keep their mistakes separate from general-round progress;
   // the map is keyed by book id, so each collection has a stable review pool.
   preschoolWords?: Record<string, Record<string, WordProgress>>;
+  // 语文 / 数学 use their own pools, keyed by subject book id. Kept apart from
+  // `words` so the English learned-word counter never counts a maths topic.
+  subjects?: Record<string, Record<string, WordProgress>>;
+  subject?: SubjectId;
+  subjectBookId?: string;
+  /** Last grade picked for each subject, so switching tabs keeps the level. */
+  subjectBooks?: Partial<Record<'chinese' | 'math', string>>;
   pending: ScoreEvent[];
   rounds: number;
   points: number;
@@ -32,6 +47,11 @@ export interface RoundWord {
   quiz: QuizKind;
   /** Present only when the question type is a dialogue. */
   dialogue?: DialogueEntry;
+}
+export interface SubjectRoundItem {
+  question: SubjectQuestion;
+  isNew: boolean;
+  wasMistake: boolean;
 }
 const memory = new Map<string, Progress>();
 const unsaved = new Set<string>();
@@ -134,6 +154,13 @@ export function optionsFor(word: Word, words: Word[] = WORDS, mode: 'zh' | 'en' 
   const visual = (item: Word) => item.image || item.emoji || `letter:${item.en.charAt(0)}`;
   const label = (item: Word) => (mode === 'en' ? item.en.toLowerCase() : item.zh);
   const other = shuffle(words.filter((w) => w.id !== word.id));
+  // Picture options should look like one set: if the answer has an
+  // illustration, prefer illustrated distractors (and vice versa for emoji),
+  // so a child never sees one painted card next to two emoji.
+  if (mode === 'zh') {
+    const direction = word.image ? 1 : -1;
+    other.sort((a, b) => (Number(Boolean(b.image)) - Number(Boolean(a.image))) * direction);
+  }
   const seenLabels = new Set([label(word)]);
   const seenVisual = new Set([visual(word)]);
   const chosen: Word[] = [];
@@ -156,6 +183,86 @@ export function optionsFor(word: Word, words: Word[] = WORDS, mode: 'zh' | 'en' 
 
 export async function selectBook(userId: string, bookId: string) {
   return locked(userId, () => save(userId, { ...readProgress(userId), bookId }));
+}
+
+export async function selectSubject(userId: string, subject: SubjectId) {
+  return locked(userId, () => {
+    const current = readProgress(userId);
+    if (subject === 'english') return save(userId, { ...current, subject });
+    // Remember the last grade for each subject so switching tabs does not reset
+    // a second grader back to the first-grade bank.
+    const saved = current.subjectBooks?.[subject];
+    const bookId = findSubjectBook(saved, subject).id;
+    return save(userId, { ...current, subject, subjectBookId: bookId });
+  });
+}
+
+export async function selectSubjectBook(userId: string, bookId: string) {
+  return locked(userId, () => {
+    const current = readProgress(userId);
+    const book = findSubjectBook(bookId);
+    return save(userId, {
+      ...current,
+      subjectBookId: book.id,
+      subjectBooks: { ...current.subjectBooks, [book.subject]: book.id },
+    });
+  });
+}
+
+const priorityOf = (state?: WordProgress) => (state?.needsReview ? 0 : !state?.seen ? 1 : 2);
+
+// The two non-English subjects share one contract: five questions, a review
+// pool keyed by a stable question/topic id, and the same score event shape.
+// Chinese questions are authored and fixed; maths topics are re-generated with
+// fresh numbers every time they return, so a retried mistake is a new question.
+export function makeSubjectRound(
+  progress: Progress,
+  book: SubjectBook,
+  random: () => number = Math.random,
+): SubjectRoundItem[] {
+  const states = progress.subjects?.[book.id] ?? {};
+  if (book.subject === 'chinese') {
+    const ranked = chineseQuestions(book.grade).map((question) => {
+      const state = states[question.key];
+      return {
+        question,
+        state,
+        priority: priorityOf(state),
+        tie: random(),
+      };
+    });
+    ranked.sort(
+      (a, b) =>
+        a.priority - b.priority ||
+        (a.state?.seen ?? 0) - (b.state?.seen ?? 0) ||
+        (a.state?.lastSeen ?? 0) - (b.state?.lastSeen ?? 0) ||
+        a.tie - b.tie,
+    );
+    return ranked.slice(0, 5).map(({ question, state }) => ({
+      question,
+      isNew: !state?.seen,
+      wasMistake: !!state?.needsReview,
+    }));
+  }
+
+  const topics = mathTopics(book.grade);
+  const ranked = topics.map((topic) => {
+    const key = `math:g${topic.grade}:${topic.id}`;
+    const state = states[key];
+    return { topic, state, key, priority: priorityOf(state), tie: random() };
+  });
+  ranked.sort(
+    (a, b) =>
+      a.priority - b.priority ||
+      (a.state?.seen ?? 0) - (b.state?.seen ?? 0) ||
+      (a.state?.lastSeen ?? 0) - (b.state?.lastSeen ?? 0) ||
+      a.tie - b.tie,
+  );
+  return ranked.slice(0, 5).map(({ topic, state }) => ({
+    question: makeMathQuestion(topic, random),
+    isNew: !state?.seen,
+    wasMistake: !!state?.needsReview,
+  }));
 }
 
 export async function saveSoundPreferences(
@@ -199,6 +306,50 @@ export async function completeRound(
       };
     }
     if (scope !== 'general') (progress.preschoolWords ??= {})[scope] = states;
+    progress.rounds += 1;
+    progress.points += event.points_earned;
+    progress.correct += correct;
+    progress.answered += 5;
+    progress.pending.push(event);
+    progress.recentRoundIds = [...progress.recentRoundIds.slice(-19), id];
+    return save(userId, progress);
+  });
+}
+
+export async function completeSubjectRound(
+  userId: string,
+  id: string,
+  round: SubjectRoundItem[],
+  answers: boolean[],
+  scope: string,
+) {
+  return locked(userId, () => {
+    const progress = readProgress(userId);
+    if (progress.recentRoundIds.includes(id)) return progress;
+    if (round.length !== 5 || answers.length !== 5) throw new Error('Incomplete round');
+    const learned = round.filter((item) => item.isNew).length;
+    const correct = answers.filter(Boolean).length;
+    const repaired = round.filter((item, i) => item.wasMistake && answers[i]).length;
+    const event: ScoreEvent = {
+      id,
+      words_learned: learned,
+      words_reviewed: 5 - learned,
+      correct_count: correct,
+      total_count: 5,
+      mistakes_corrected: repaired,
+      points_earned: correct * 10 + repaired * 5,
+    };
+    progress.subjects ??= {};
+    const states = (progress.subjects[scope] ??= {});
+    for (const [i, item] of round.entries()) {
+      const old = states[item.question.key];
+      states[item.question.key] = {
+        seen: (old?.seen ?? 0) + 1,
+        correct: (old?.correct ?? 0) + Number(answers[i]),
+        needsReview: !answers[i],
+        lastSeen: Date.now(),
+      };
+    }
     progress.rounds += 1;
     progress.points += event.points_earned;
     progress.correct += correct;

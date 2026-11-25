@@ -18,7 +18,7 @@
     "db:styles": "node scripts/migrate-owned-styles.mjs",
     "db:gifts": "node scripts/migrate-gift-points.mjs",
     "typecheck": "tsc -b",
-    "build": "npm run check:vocabulary && npm run typecheck && vite build && node scripts/check-vocabulary.mjs --dist",
+    "build": "npm run check:vocabulary && npm run check:subjects && npm run check:art && npm run typecheck && vite build && node scripts/check-vocabulary.mjs --dist",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:layout": "playwright test -c playwright.layout.config.ts",
@@ -27,7 +27,11 @@
     "format:check": "prettier --check .",
     "deploy:api": "wrangler deploy",
     "deploy:web": "wrangler pages deploy dist --project-name wordsprout",
-    "predeploy:web": "npm run build"
+    "predeploy:web": "npm run build",
+    "check:subjects": "node scripts/check-subjects.mjs",
+    "check:art": "node scripts/check-art.mjs",
+    "art:generate": "node scripts/generate-art.mjs",
+    "art:grid": "node scripts/generate-art-grid.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",

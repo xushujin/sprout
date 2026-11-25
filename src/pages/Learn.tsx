@@ -27,11 +27,28 @@ import {
 import { speak, stopAudio } from '../lib/audio';
 import { growthFor } from '../lib/growth';
 import { Icon } from '../components/Icons';
+import { ArtImage } from '../components/ArtImage';
+import { CELEBRATE_ART, THEME_ART } from '../lib/art';
 import { RoundSprout, Sunflower } from '../components/Sunflower';
+import { SubjectSwitch } from '../components/SubjectSwitch';
+import { SubjectPractice } from './SubjectPractice';
+import type { SubjectId } from '../data/question';
+import { themeCopyFor, themeFor } from '../lib/theme';
 
 export function WordPicture({ word }: { word: Word }) {
-  return word.image ? (
-    <img src={word.image} alt={word.zh} className="word-image" />
+  const [failed, setFailed] = useState(false);
+  const image = word.image && !failed ? word.image : '';
+  return image ? (
+    <img
+      src={image}
+      alt={word.zh}
+      className="word-image"
+      width={384}
+      height={384}
+      decoding="async"
+      draggable={false}
+      onError={() => setFailed(true)}
+    />
   ) : word.emoji ? (
     <span role="img" aria-label={word.zh} className="word-emoji">
       {word.emoji}
@@ -105,17 +122,28 @@ function DialogueCard({
   );
 }
 
-export function Learn({
-  user,
-  progress,
-  onComplete,
-  roundActive,
-}: {
+interface LearnProps {
   user: User;
   progress: Progress;
+  subject: SubjectId;
+  onSelectSubject: (subject: SubjectId) => void;
   onComplete: () => void;
   roundActive: (active: boolean) => void;
-}) {
+}
+
+// Thin dispatcher: English keeps its word engine, while 语文 / 数学 render the
+// question practice page. Keeping them apart avoids loading both flows' state.
+export function Learn(props: LearnProps) {
+  // Switching subjects replaces the whole home body; start the new one at the
+  // top instead of leaving the child halfway down the previous page.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [props.subject]);
+  if (props.subject !== 'english') return <SubjectPractice {...props} subject={props.subject} />;
+  return <EnglishLearn {...props} />;
+}
+
+function EnglishLearn({ user, progress, onSelectSubject, onComplete, roundActive }: LearnProps) {
   const [bookId, setBookId] = useState(() => findBook(progress.bookId).id);
   const book = findBook(bookId);
   const scope = scopeFor(book);
@@ -168,6 +196,8 @@ export function Learn({
   }
   const learned = learnedIds.size;
   const growth = growthFor(progress.points);
+  const themeCopy = themeCopyFor(user);
+  const theme = themeFor(user) ?? 'boy';
 
   useEffect(() => {
     const previous = readProgress(user.id).bookId;
@@ -383,10 +413,13 @@ export function Learn({
             <h1>
               你好，{user.display_name} <span className="heading-wave">👋</span>
             </h1>
-            <p>今天也让英语，长大一点点。</p>
+            <p>
+              今天也让英语，长大一点点。 <span className="theme-badge">{themeCopy.badge}</span>
+            </p>
           </div>
           <span className="date-tag">慢慢学，天天长</span>
         </div>
+        <SubjectSwitch value="english" onChange={onSelectSubject} />
         <BookPicker
           selected={book}
           onChange={changeBook}
@@ -419,6 +452,12 @@ export function Learn({
                 growth.next ? `，还差 ${growth.toNext} 分长成${growth.next.name}` : '，已经结籽'
               }`}
             >
+              <img
+                className="growth-badge"
+                src={`/sunflower/stage-${growth.index}-badge.webp`}
+                alt=""
+                aria-hidden="true"
+              />
               <strong>{growth.stage.name}</strong>
               <span className="growth-track" aria-hidden="true">
                 <span style={{ width: `${Math.round(growth.progress * 100)}%` }} />
@@ -430,8 +469,20 @@ export function Learn({
             <SoundControls value={sounds} onChange={changeSound} />
             <span className="hero-caption">轻松几分钟，进步看得见</span>
           </div>
-          <div className="hero-art">
-            <Sunflower key={growth.index} stage={growth.index} className="sunflower--grow" />
+          <div className={`hero-art hero-art--${theme}`}>
+            <span className="hero-halo" aria-hidden="true" />
+            <ArtImage
+              src={THEME_ART[theme].hero}
+              alt=""
+              className="hero-character"
+              fallback={theme === 'girl' ? '🌷' : '🌲'}
+              eager
+              width={720}
+              height={1080}
+            />
+            <span className="hero-float hero-float--1" aria-hidden="true" />
+            <span className="hero-float hero-float--2" aria-hidden="true" />
+            <span className="hero-float hero-float--3" aria-hidden="true" />
           </div>
         </section>
         <div className="stats-grid">
@@ -497,7 +548,7 @@ export function Learn({
           ))}
         </div>
         <div className="garden-tip">
-          <span>💡</span>
+          <ArtImage src={THEME_ART[theme].note} alt="" className="garden-tip-art" fallback="💡" />
           <p>
             <strong>小芽悄悄话</strong>答错也没关系，它会回到“补错池”。下次答对，还能额外获得 5
             积分！
@@ -520,7 +571,9 @@ export function Learn({
     const stageUp = grown.index > growthFor(startPoints.current).index;
     return (
       <div className="result-card page-enter">
-        <div className="result-medal">🌟</div>
+        <div className="result-medal">
+          <ArtImage src={CELEBRATE_ART} alt="" className="result-medal-art" fallback="🌟" eager />
+        </div>
         <span className="eyebrow">{book.name} · 本轮成长</span>
         <h1>{correct === 5 ? '五颗小芽，都发芽啦！' : '又向前走了一小步！'}</h1>
         <p>认真完成一轮，就是值得庆祝的成长。</p>
@@ -542,7 +595,7 @@ export function Learn({
           <Sunflower variant="badge" stage={grown.index} className="sunflower-result" />
           <p>
             <strong>
-              {stageUp ? `向日葵长成了${grown.stage.name}！` : `向日葵 · ${grown.stage.name}`}
+              {stageUp ? `向日葵${grown.stage.name}啦！` : `向日葵 · ${grown.stage.name}`}
             </strong>
             <span>
               {grown.next

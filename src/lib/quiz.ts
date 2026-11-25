@@ -1,5 +1,5 @@
-import type { Word } from '../data/words';
-import { dialogueFor } from '../data/dialogues';
+import type { Word } from '../data/words.ts';
+import { dialogueFor } from '../data/dialogues.ts';
 
 // Five question shapes share one round contract: each word still ends with a
 // single right/wrong answer, so scoring and the Worker API stay unchanged.

@@ -5,9 +5,11 @@ import {
   emptyProgress,
   lastUsername,
   readProgress,
+  selectSubject,
   spendPoints,
   storageIsDurable,
 } from './lib/progress';
+import { applyTheme, themeFor } from './lib/theme';
 import { syncProgress, type SyncStatus } from './lib/sync';
 import { Icon } from './components/Icons';
 import { UserAvatar } from './components/UserAvatar';
@@ -73,6 +75,11 @@ export function App() {
       void syncNow();
     } else navigate('admin');
   }
+  useEffect(() => {
+    // A child's avatar already carries the gender, so the skin follows it with
+    // no extra setting. Logging out returns the login screen to the base theme.
+    applyTheme(themeFor(user));
+  }, [user?.id, user?.avatar?.gender]);
   useEffect(() => {
     // Only the server can restore identity. No password, token or user profile is
     // saved in localStorage; learning records are isolated by the returned ID.
@@ -147,6 +154,7 @@ export function App() {
     user.role === 'admin'
       ? [{ id: 'admin' as const, label: '老师的花园', icon: 'shield' as const }, nav[2]]
       : nav;
+  const theme = themeFor(user) ?? 'boy';
   return (
     <div className={`app-shell ${page === 'profile' ? 'profile-mode' : ''}`.trim()}>
       <aside className="sidebar">
@@ -176,7 +184,7 @@ export function App() {
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-note">
-            <span>🌿</span>
+            <span>{theme === 'girl' ? '🌸' : '🌿'}</span>
             <p>
               不用一下子很厉害，
               <br />
@@ -258,6 +266,10 @@ export function App() {
             <Learn
               user={user}
               progress={progress}
+              subject={progress.subject ?? 'english'}
+              onSelectSubject={(next) => {
+                void selectSubject(user.id, next);
+              }}
               roundActive={setActiveRound}
               onComplete={() => {
                 refreshProgress();
@@ -283,7 +295,7 @@ export function App() {
           {activeRound && <p className="local-note">完成这一轮后会保存结果，并可切换页面。</p>}
         </main>
         <footer className="app-footer">
-          <Icon name="sprout" size={16} /> WordSprout <span>·</span> 每天一小步，英语一大步。
+          <Icon name="sprout" size={16} /> WordSprout <span>·</span> 每天一小步，成长一大步。
           <a href="/audio-credits.html" target="_blank" rel="noreferrer">
             发音来源
           </a>

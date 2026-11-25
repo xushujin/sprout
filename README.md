@@ -1,6 +1,6 @@
 # WordSprout · 单词小芽
 
-面向小学生的英语学习 H5。React + Vite 静态前端，Cloudflare Workers API、D1 数据库与 KV 周榜快照。默认不启用任何付费服务，也不依赖在线 AI/TTS API。
+面向小学生的多科目学习 H5：英语词汇、语文识字与古诗、数学习题，各配一套按性别自动切换的界面皮肤。React + Vite 静态前端，Cloudflare Workers API、D1 数据库与 KV 周榜快照。默认不启用任何付费服务，也不依赖在线 AI/TTS API。
 
 已部署：[wordsprout.hatim.eu.org](https://wordsprout.hatim.eu.org)，[管理员入口](https://wordsprout.hatim.eu.org/admin)。资源与验收记录见 [DEPLOYMENT.md](DEPLOYMENT.md)。
 
@@ -28,6 +28,11 @@ flowchart LR
 - 首页另有 WordSprout 自主编排的“幼小衔接”路线：英语启蒙与问候、颜色与大小、数字与数量、课堂与书包、我的身边共 5 个主题，每主题 10 项。题目复用已核验的 600 词和静态 MP3，不复制外部教材内容，也不增加音频、Worker、D1 或 KV 资源。主题内每轮 5 项，进度和补错池按主题保存在本机；完成后仍只批量提交一次积分事件。
 - 首页还提供 8 个“主题包”：动物朋友、好吃的食物、校园一天、温暖的家、天气与四季、出门去看看、我的身体、动起来，每包 20 个词，全部取自同一批 600 词及静态 MP3，可连续学 4 轮。主题包同样是自主整理的主题词集，不对应教材单元，也不新增音频、Worker、D1 或 KV 资源。
 - 每轮 5 题按固定顺序混合题型：看图选中文 → 看中文选英文 → 听发音选英文 → 拼写填空 → 看图选中文。主题包把第二题换成“对话选词填空”：2–3 句短对话留一个空，三选一填词，30 秒，可点“中文提示”查看保留空位的整段中文；八个主题包共 145 条经审核微对话，覆盖全部 160 个主题词，年级 / 难度 / 幼小衔接不考对话，词条若暂无审核语料会自动回退为看中文选英文，不会出现空题。对话里的背景词只用于阅读，不计入词表，也不会考。幼小衔接不考拼写，改为听音与认图交替。拼写题给出打乱的字母牌（单词字母 + 2 个干扰字母），点满自动判卷，可用“退一格”重来；不足 3 个或超过 8 个字母、含连字符或数字的词会自动改用英文选择题。计时按题型 15 秒，拼写与对话 30 秒。各题型共用一次对错判定，因此计分公式、服务端校验和每轮一次写入都不变。听音题与对话题在音频失败时都不会卡住：前者亮出单词，后者本来就不依赖音频。
+- 学习页可按“英语 / 语文 / 数学”切换科目，所选科目与年级保存在本机进度中，刷新后保持。语文与数学各有 6 个年级（一年级到六年级），同样是 5 题一轮、每题 30 秒；计分公式、服务端校验和“每轮一次写入”与英语完全一致，因此 Worker、D1 与 KV 都没有改动。
+- 语文共 1014 道自编题（一年级 157、二年级 188、三年级 186、四年级 163、五年级 162、六年级 158），覆盖拼音认字、看字选音、古诗接句、成语填空、反义词、近义词、量词搭配、词语搭配、偏旁部首、多音字、修辞手法、关联词、文学常识、字词理解 14 类。四到六年级改为词语级近反义词，并新增多音字、修辞、关联词、文学常识与字词理解；拼音题只出现一个汉字、选项只出现读音，同一册内不出现重复读音；古诗、成语、量词等题面均人工核对过唯一答案，`npm run check:subjects` 会拦截重复题面、重复选项和答案缺失。
+- 年级归属按统编版教材摆放，不按主题随意分组：识字表按一上 / 一下 / 二上 / 二下 / 三上 / 三下分册，古诗按课文所在册（如《江雪》在二上、《枫桥夜泊》在五上），成语以课文出现年级优先，拼音与偏旁只出现在低年级；数学按人教版单元顺序（表内乘除在二年级、有余数除法在二下、时、分、秒在三年级、植树问题在五上）。`tests/subjects.test.ts` 里的 `curriculum placement` 用例会在题型被放错年级时失败。
+- 数学不保存固定题面，而是 104 类题型（一至六年级 17 / 18 / 17 / 17 / 18 / 17 类）随机出数，覆盖加减乘除、比大小、找规律、时间、人民币、长度与质量、分数、周长面积、大数、小数、因数倍数、百分数、方程、圆与圆柱、比例与应用题。答错的题下一轮仍会按题型优先出现，但数字重新生成；校验脚本对每类题型抽样 250 组，确认三个选项互不重复、答案必在其中，且题面与选项里没有 `NaN` / `undefined`。
+- 界面有两套皮肤：男孩为森林蓝，女孩为花园玫红；登录后由 `avatar.gender` 自动选择，不提供手动开关。皮肤只改写颜色、背景和描边等 CSS 变量（`html[data-theme='boy'|'girl']`），布局、插画与形象完全复用；首页、语文 / 数学答题页、星榜、我的形象与暂停弹窗都会跟随，奖牌、价格等语义色保持原样。在“我的形象”里改性别并保存后立即生效，刷新后仍保持；登录页与尚未选择性别的账号沿用原来的绿色配色。
 - 年级与难度词库之间共享逐词进度；幼小衔接与主题包按各自集合单独记录，以免不同场景下的学习记录互相覆盖。每轮错词优先；答对 10 分，补错成功额外 5 分；未完成轮次不切换词库。
 - 学习积分同时养一株向日葵：种子 0 / 发芽 30 / 幼苗 250 / 花苞 750 / 开花 1500 / 盛放 3000 / 结籽 6000 分，共七段形态。结籽按 600 个词各见一次的全词库旅程标定（约 110–120 轮、550–600 次答题），前期仍保持第一轮发芽的即时反馈。七段形态使用预渲染水彩插画（`public/sunflower/`），48px 星榜头像使用单独裁切；阶段由本机累计积分实时推导，不新增存储字段、Worker 路由、D1 或 KV 请求；调整阈值会自动重新分级既有植物。答错不会枯萎或降级，只有累积。每轮答题的反馈区另有一株五题小芽：答对一题长一片叶子，答错仍会长高，五题全对才开花；它只反映本轮，不单独存储。植物随本机进度保存，换设备或清缓存会从种子重新开始。
 - 学生可以在“我的形象”里选择性别、3 种发型、3 种肤色和对应性别下的 5 套服饰（3 套日常 + 2 套礼服）。默认形象免费：男孩为寸头 / 自然色 / 短袖，女孩为波波头 / 自然色 / 衬衫；其余选项按项解锁，发型 1000 分、肤色 500 分、日常服饰 1500 分、礼服 3000 分。未解锁选项点击后先免费试穿，可随时取消；点“解锁并穿上”才弹出扣分确认框，确认卡固定在右下角（手机为底部抽屉），不会遮挡形象预览。解锁时优先扣奖励积分，不足部分再扣当前成长积分和本周积分并写 `spend_events`，向日葵可能退回上一阶段，解锁后该账号永久可用。形象由同一 1024×1536 画布上的皮肤、下装、上衣、头发四层透明图实时叠放，不再预生成“性别 × 肤色 × 发型 × 服饰”的组合图；侧栏小头像从同一组图层裁切头部。手机端（≤760px）为单屏编辑器：形象预览常驻并按屏幕高度缩放，性别 / 发型 / 肤色 / 服饰通过分类切换，保存按钮固定在顶部，隐藏页面标题与页脚，切换与预览都不需要上下滚动。道具（帽子、耳机、围巾等）与脸型暂不在编辑器中提供，商城接口和已购数据继续保留，已购买的装饰不会丢失；形象只在家里、侧栏和“我的形象”页展示，星榜仍用向日葵阶段。
@@ -41,10 +46,12 @@ flowchart LR
 
 ```text
 assets-src/avatar/           # 形象 1024×1536 PNG 母版与重新生成说明（不参与构建）
+assets-src/art/              # 插画提示词、四宫格分组与生成脚本配置（不参与构建）
 src/
   App.tsx                    # /me 自动登录、布局、同步状态
   pages/Login.tsx            # 浏览器密码管理器、默认记住我
-  pages/Learn.tsx            # 5 词学习、五种题型、反馈与积分
+  pages/Learn.tsx            # 科目分发：英语学习页 / 语文数学答题页
+  pages/SubjectPractice.tsx  # 语文、数学的年级选择、5 题答题、结果与暂停
   pages/Leaderboard.tsx      # KV 快照、形象缩略图与整身形象弹窗
   pages/Admin.tsx            # 建号、改账号、密码重置、累计 / 本周数据
   pages/Profile.tsx          # 用户形象：性别 / 发型 / 肤色 / 服饰
@@ -54,21 +61,28 @@ src/
   data/preschool.ts          # 幼小衔接主题与经审核词库映射
   data/topics.ts             # 8 个主题包：按主题引用同一批经审核词条
   data/dialogues.ts          # 主题包微对话：答案、干扰项与中文提示
+  data/question.ts           # 科目契约：SubjectQuestion、科目书、洗牌与种子随机
+  data/word-images.ts        # 生成脚本维护的词画清单；无图单词自动回退 emoji
+  data/chinese.ts            # 1014 道语文题：字音、古诗、成语、修辞、关联词等
   data/catalog.ts            # 年级 / 主题包 / 难度 / 幼小衔接；旧选择兼容迁移
   lib/api.ts                 # Cookie 请求、超时与错误处理
-  lib/progress.ts            # 本地进度、补错池、outbox
+  lib/progress.ts            # 本地进度、补错池、outbox、科目轮次
   lib/quiz.ts                # 题型轮换、限时、对话降级与拼写字母牌
+  lib/math-quiz.ts           # 104 类数学题型：随机出数、选项去重、稳定题型键
+  lib/theme.ts               # 按 avatar.gender 选择并应用 boy / girl 皮肤
   lib/sync.ts                # 整轮同步、退避、去重与账号归属
   lib/audio.ts               # 直接播放 Pages MP3，可选 CDN / 系统语音降级
   lib/game-sound.ts          # 本地 Web Audio 背景音乐、答题音效、发音避让
   lib/growth.ts              # 向日葵七阶段阈值与进度推导
   components/Icons.tsx       # SVG 图标与小芽插图
   components/BookPicker.tsx  # 选择年级 / 主题包 / 难度 / 幼小衔接
+  components/SubjectSwitch.tsx # 英语 / 语文 / 数学切换
+  components/ArtImage.tsx    # 插画渲染、失败回退与科目/主题插画路径
   components/SoundControls.tsx # 音乐 / 音效开关
   components/Sunflower.tsx   # 向日葵七阶段插画（预渲染 WebP）与答题小芽
   components/UserAvatar.tsx  # 分层形象叠放与侧栏头部裁切
   assets/avatar/             # 分层形象素材：皮肤 3 × 发型 3 × 上衣 5 + 下装
-  styles.css                 # 手机 / 桌面布局
+  styles.css                 # 手机 / 桌面布局、两套主题与插画尺寸
 worker/
   index.ts                   # API 路由与 Cron
   env.d.ts                   # D1 / KV / Rate Limit / 可选 R2 绑定
@@ -82,6 +96,13 @@ shared/
 scripts/
   setup.mjs                  # 生成本地随机密钥
   seed.mjs                   # 首次创建管理员，无默认密码
+  check-subjects.mjs         # 语文题库与数学生成器的机械校验
+  check-art.mjs              # 插画文件、词画清单与覆盖率检查
+  art-api.mjs                # 生图接口客户端（chat/completions 取 base64 图）
+  generate-art.mjs           # 单张生成主题 / 科目 / 单词插画
+  generate-art-grid.mjs      # 四宫格批量生成单词插画（省额度）
+  art-convert.py             # 单张 PNG 去边、居中、压缩为 WebP
+  art-grid-convert.py        # 四宫格裁切、去边、压缩为 WebP
   production-secrets.mjs     # 生成并上传独立生产密钥
   seed-e2e.mjs               # 只用于隔离的本地测试数据库
   migrate-owned-styles.mjs   # 形象解锁列与旧形象回填（可重复执行）
@@ -92,10 +113,59 @@ public/audio-credits.html    # 对外可访问的音频署名页
 public/vocabulary/credits.html # 保留内容与使用条件说明
 public/404.html              # 已移除内容不再返回 SPA 或词表
 public/sunflower/            # 7 个成长阶段插画与 48px 星榜头像（WebP）
+public/art/                  # 生成的主题场景、科目插画与单词图（WebP，透明底）
 docs/content-audit/          # 来源核对、删除清单、历史部署清理记录
 schema.sql                   # 五张表（users / sessions / score_events / spend_events / gift_events）、形象 / 积分 / 已解锁选项列及索引
 wrangler.toml                # D1、KV、限流、Cron、可选 R2
 ```
+
+## 插画与两套主题
+
+### 两套皮肤
+
+登录后由 `avatar.gender` 决定皮肤，不额外增加设置项：
+
+- `html[data-theme='boy']`：森林探险队，雾蓝 + 苔绿，地形线背景，英雄区是森林里的小探险家与狐狸。
+- `html[data-theme='girl']`：花园小队，玫瑰 + 奶油，花园花纹背景，英雄区是浇水的小园丁与小鸟。
+- 没有性别的账号（例如从未打开形象页的老师）保留原来的绿色花园皮肤。
+
+主题不只是换色：首页与科目页各有一张 3:2 / 1:1 的角色场景图，侧栏提示卡与结果页奖章也随主题切换；`styles.css` 末尾的 `Illustration layer` 统一管理插画尺寸、光晕与手机端的淡背景处理。
+
+### 题图中的插画
+
+`src/data/word-images.ts` 是生成脚本维护的清单。`curriculum-words.ts` 在组装词库时把 `/art/words/<id>.webp` 写进 `Word.image`，因此：
+
+- 有图的单词在图片题、学习卡、下一轮预览里都使用同一张画；
+- 没图的单词继续用 emoji 兜底，不会出现裂图；
+- `optionsFor()` 会让同一道图片题的三个选项保持同一种视觉（全画或全 emoji），不会一张水彩画配两个 emoji。
+
+插画统一为暖色水粉 + 彩铅、透明底 WebP：科目场景 512×512，角色场景 720×1080，提示卡与奖章 256×256，单词图 384×384。主题与科目场景固定为 `public/art/` 下的 8 张文件；单词图放在 `public/art/words/`。
+
+### 重新生成
+
+密钥只放在本机、已被 `.gitignore` 忽略的 `.env.art`：
+
+```bash
+printf 'IMAGE_API_KEY=...\n' > .env.art
+chmod 600 .env.art
+```
+
+```bash
+npm run art:generate -- --only=scenes            # 主题、科目、提示卡、奖章
+npm run art:generate -- --only=scene:celebrate   # 只重画某一张场景
+npm run art:generate -- --only=word:apple,cat    # 指定单词
+npm run art:grid                                 # 四宫格批量补齐单词（更省额度）
+```
+
+接口走 OpenAI **chat** 协议而不是 images 协议，图片以 base64 data URL 的形式写在 assistant 消息里（`![image_1](data:image/png;base64,…)`）。因此没有 `size` / `background` / `output_format` 参数可传，构图比例与透明底都靠提示词表达：`prompts.mjs` 里每个场景声明 `aspect`，`art-api.mjs` 的 `aspectHint()` 会追加一句明确的比例与留白说明（角色 2:3，静物与单词 1:1）。可用环境变量覆盖，默认值写在 `.env.art` 或环境里均可：
+
+| 变量            | 默认值                                         |
+| --------------- | ---------------------------------------------- |
+| `IMAGE_API_URL` | `https://new.orbitix.site/v1/chat/completions` |
+| `IMAGE_MODEL`   | `gpt-image-2.5-flare`                          |
+| `IMAGE_API_KEY` | 无，必填                                       |
+
+提示词在 `assets-src/art/prompts.mjs`，四宫格分组在 `assets-src/art/grid-groups.mjs`。脚本会跳过已存在的文件，中断后直接重跑即可续传；`--force` 才会覆盖。`npm run check:art` 会校验清单与文件、报告各年级覆盖率，`npm run build` 已串入该检查。
 
 ## 本地运行
 
@@ -300,10 +370,13 @@ Cron 一天运行 48 次。设每周最多有 `E` 条事件，则日期索引的
 ```sh
 npm run build
 npm run check:vocabulary
+npm run check:subjects
 npm test
 npm audit
 npx wrangler deploy --dry-run
 ```
+
+`check:subjects` 不依赖浏览器：它核对 12 个科目书、年级隔离、语文题量与题型分布（每册 ≥140 题、≥6 类题型、单类不超过 55%）、拼音格式与单选答案，并对 104 类数学题型各抽 250 组检查选项。`npm run build` 已把两项题库校验串在 typecheck 之前。
 
 浏览器测试会启动独立的 `.wrangler/e2e/state` 数据库，不修改日常开发数据库；先停止 `npm run dev`，释放 5173/8787 端口：
 
@@ -329,6 +402,7 @@ PLAYWRIGHT_BROWSER=webkit npm run test:layout
 ## 可替换位置与 TODO
 
 - **通用词库 / 图片 / 主题包 / 对话**：编辑 `src/data/curriculum-words.ts`，保留稳定 `id`；幼小衔接主题在 `src/data/preschool.ts`、主题包在 `src/data/topics.ts` 中按 ID 选择这些已审核词条，新增主题或主题包必须继续只引用经核验词库，`npm run check:vocabulary` 会校验数量、去重与词条归属。主题包对话写在 `src/data/dialogues.ts`，每条的答案与干扰项必须来自同一个包，全篇恰好一个 `___`，`a/an` 要与答案首字母一致，每个包至少覆盖 80% 的词；背景词只能使用脚本里的胶水词表，新增背景词需要同时更新该表，避免语料悄悄超纲。首批基础词的图片与音标可在 `src/data/words.ts` 补充，也可用 `public/words/` 静态图片填 `image`。505 个二级词汇只是范围参照，年级和难度是 WordSprout 的自主学习建议，不代表官方逐年级分配或出版社教材同步。
+- **语文题库 / 数学题型 / 皮肤**：语文题在 `src/data/chinese.ts`，由字表、古诗、成语、近反义词、量词、搭配、偏旁、多音字、修辞、关联词、文学常识、字词理解等原子表生成；字表增删一行会同时产出“认读”和“看字选音”两题，改完请运行 `npm run check:subjects`，它会拦住同册重复读音、重复题面、重复选项与答案缺失。数学题在 `src/lib/math-quiz.ts` 按题型注册，`make(random)` 返回题面与选项；题型 `id` 同时是补错池的键，改名会让旧错题记录失效。皮肤颜色集中在 `src/styles.css` 的 `html[data-theme='boy']` 与 `'girl'` 变量块，其余选择器只消费 `--ws-*`；新增控件请优先用变量而不是硬编码颜色。性别到皮肤的映射在 `src/lib/theme.ts`。
 - **向日葵插画**：替换 `public/sunflower/stage-0.webp` 至 `stage-6.webp`（1024×1024 透明 WebP）及对应的 `stage-*-badge.webp`（256×256）即可，阶段阈值仍在 `src/lib/growth.ts`。生成与处理记录见 `docs/content-audit/sunflower-art.json`；新增或替换图片时同步更新该记录。
 - **用户形象**：1024×1536 PNG 母版在 `assets-src/avatar/{boy,girl}/`（不参与构建），转换后的 640×960 WebP 在 `src/assets/avatar/`；重新生成的 `cwebp` 命令与命名规则见 `assets-src/avatar/README.md`。新增发型或服饰时补母版、转换，并在 `shared/avatar.ts` 登记选项；侧栏头像的裁切窗口由 `src/assets/avatar.ts` 的 `AVATAR_BUST` 控制。免费默认项、解锁价格与已解锁校验在 `shared/wardrobe.ts`。装饰与脸型当前不参与渲染。
 - **第三方教材**：当前没有通过再分发授权核验的教材词库，外研版入口、8 册处理数据、原始数据和导入脚本已移除。原 `fltrp-*` 选择会迁移为相应通用年级，旧学习统计和未同步结果保留。不应以“GitHub 上能下载”或“仓库带 GPL”代替第三方教材的授权证明。

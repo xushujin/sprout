@@ -41,3 +41,7 @@ Desktop.ini
 
 # 本机工作区数据（会话记忆等）
 .workbuddy/
+
+# 生图接口密钥（仅本机使用）
+.env.art
+assets-src/art/raw/
