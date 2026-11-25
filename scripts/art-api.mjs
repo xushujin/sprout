@@ -1,12 +1,14 @@
 /**
  * Image-generation client shared by the art scripts.
  *
- * The provider speaks the OpenAI *chat* protocol rather than the images API:
- * the picture comes back as a base64 data URL inside the assistant message,
- * e.g. `![image_1](data:image/png;base64,iVBORw0…)`. That also means there is
- * no `size` / `background` / `output_format` parameter — aspect ratio and
- * transparency have to be asked for in the prompt text, which is why
- * `aspectHint()` appends an explicit composition line.
+ * Two providers are supported and picked from the URL:
+ *
+ *   …/chat/completions     the picture is a base64 data URL inside the assistant
+ *                          message, e.g. `![image_1](data:image/png;base64,iVBORw0…)`.
+ *                          No size / background parameters exist, so aspect ratio
+ *                          and transparency live in the prompt (`aspectHint()`).
+ *   …/images/generations   the classic images API: prompt in, `b64_json` out, with
+ *                          real `size` and `background: 'transparent'` fields.
  *
  *   IMAGE_API_URL  default https://new.orbitix.site/v1/chat/completions
  *   IMAGE_MODEL    default gpt-image-2.5-flare
@@ -21,6 +23,7 @@ export const DEFAULT_MODEL = 'gpt-image-2.5-flare';
 
 const DATA_URL = /data:image\/(png|jpe?g|webp);base64,([A-Za-z0-9+/=\s]+)/i;
 const REMOTE_URL = /!\[[^\]]*\]\((https?:\/\/[^\s)]+)\)/;
+const IMAGE_SIZE = { '1:1': '1024x1024', '2:3': '1024x1536', '3:2': '1536x1024' };
 
 /** Read credentials from the environment, falling back to `.env.art`. */
 export async function readConfig(root) {
@@ -98,7 +101,12 @@ export async function generateImage({
   apiUrl = process.env.IMAGE_API_URL || DEFAULT_API_URL,
   model = process.env.IMAGE_MODEL || DEFAULT_MODEL,
 }) {
+  // Two providers are supported: the chat protocol above, and the classic
+  // images protocol (prompt in, b64_json out) for accounts still on it.
+  const imagesProtocol = apiUrl.includes('/images/generations');
+  const pixelSize = IMAGE_SIZE[aspect] ?? IMAGE_SIZE['1:1'];
   let lastError = 'unknown error';
+
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const nudge =
       attempt >= 3 ? ' Render this illustration directly as one image now, no prose reply.' : '';
@@ -106,15 +114,40 @@ export async function generateImage({
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model,
-          messages: [{ role: 'user', content: `${prompt}${aspectHint(aspect)}${nudge}` }],
-        }),
+        body: JSON.stringify(
+          imagesProtocol
+            ? {
+                model,
+                prompt: `${prompt}${aspectHint(aspect)}${nudge}`,
+                n: 1,
+                size: pixelSize,
+                background: 'transparent',
+                output_format: 'png',
+              }
+            : {
+                model,
+                messages: [{ role: 'user', content: `${prompt}${aspectHint(aspect)}${nudge}` }],
+              },
+        ),
       });
       const payload = await response.json().catch(() => null);
 
       if (!response.ok) {
         lastError = payload?.error?.message?.slice(0, 180) ?? `HTTP ${response.status}`;
+        await sleep(backoff * attempt);
+        continue;
+      }
+
+      if (imagesProtocol) {
+        const first = payload?.data?.[0];
+        if (first?.b64_json) return Buffer.from(first.b64_json, 'base64');
+        if (first?.url) {
+          const download = await fetch(first.url);
+          if (download.ok) return Buffer.from(await download.arrayBuffer());
+          lastError = `图片下载失败 HTTP ${download.status}`;
+        } else {
+          lastError = 'images 协议没有返回图片';
+        }
         await sleep(backoff * attempt);
         continue;
       }

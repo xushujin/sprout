@@ -1,8 +1,10 @@
 // Prompts for the hand-painted illustration set.
 //
-// One art direction for everything: warm gouache + coloured pencil, visible
-// paper grain, rounded shapes, no text. The generator appends STYLE to each
-// subject, so a new word only needs one short description.
+// Two art directions, one per theme. Word art and the three subject still lifes
+// stay in the neutral STYLE so every child sees the same teaching picture; the
+// boy theme dresses its hero and tip card as round toy mecha (MECHA_STYLE), the
+// girl theme as chibi cartoon (CUTE_STYLE). The generator appends the style to
+// each subject, so a new word only needs one short description.
 //
 // `aspect` is the only composition knob the provider exposes: characters get a
 // tall 2:3 portrait, still life and word art stay square so the quiz tile can
@@ -22,20 +24,39 @@ const SCENE_STYLE =
   '(not 3D, not CGI, not a photograph), no text, no letters, no numbers, no border, ' +
   'isolated on a transparent background.';
 
+// Boy theme: round, toylike mecha. Kept chunky and warm so it reads as a toy
+// figure rather than a war machine.
+const MECHA_STYLE =
+  'A friendly 2D picture-book illustration of toy-like mecha design, painted in ' +
+  'gouache with coloured-pencil line work on warm textured paper: chunky rounded ' +
+  'armour plates, oversized helmet, visible ball joints, sturdy boots, soft ' +
+  'metallic sheen, warm studio light, cool steel blue, graphite and cream with a ' +
+  'single honey-orange accent, hand-drawn only (not 3D, not CGI, not a photograph), ' +
+  'no text, no letters, no numbers, no logo, no border, isolated on a transparent ' +
+  'background.';
+
+// Girl theme: chibi cartoon, thick outlines and candy pastels.
+const CUTE_STYLE =
+  'A cute chibi cartoon illustration for young children: big sparkling eyes, round ' +
+  'cheeks with soft blush, chubby simplified shapes, thick smooth outlines, flat ' +
+  'candy colours with a light gouache texture, tiny sparkles, warm pastel rose, ' +
+  'peach, mint and butter yellow, no text, no letters, no numbers, no border, ' +
+  'isolated on a transparent background.';
+
 export const SCENES = {
   'hero-boy': {
     canvas: [720, 1080],
     aspect: '2:3',
-    style: SCENE_STYLE,
+    style: MECHA_STYLE,
     prompt:
-      'A cheerful 7-year-old boy explorer with tousled brown hair, a mustard t-shirt, olive shorts, a small canvas backpack and a green cap, kneeling on one knee and gently holding a tiny green seedling. Beside him a curious red fox, ferns, two mushrooms, a butterfly and a pine branch. Full body, three-quarter view, warm friendly smile, forest explorer mood, moss green, teal and honey palette.',
+      'A cheerful 7-year-old boy pilot standing beside his knee-high round toy mecha companion. The boy has tousled brown hair, a mustard tee, olive cargo shorts and chunky sneakers, one light mecha arm guard and a small flight pack. The mecha has an oversized rounded helmet with a warm amber visor, stubby arms, chunky feet and a short antenna. Both stand full body in three-quarter view facing the viewer with friendly confident smiles. Cool steel blue, graphite and cream with honey-orange accents.',
   },
   'hero-girl': {
     canvas: [720, 1080],
     aspect: '2:3',
-    style: SCENE_STYLE,
+    style: CUTE_STYLE,
     prompt:
-      'A cheerful 7-year-old girl gardener with a straw hat, two braids, a blush-pink pinafore dress and a cream blouse, holding a small watering can and watering a cluster of daisies and tulips. Beside her a small bluebird, a butterfly, a short wooden fence and climbing roses. Full body, three-quarter view, warm smile, garden party mood, rose, peach, lavender and sage palette.',
+      'A cheerful chibi girl gardener with two braids, a blush-pink pinafore dress and a cream blouse, holding a small mint watering can and watering three fat tulips. Beside her a round bluebird, a butterfly and a short wooden fence. Big sparkling eyes, round cheeks, chubby simplified shapes, full body, three-quarter view, happy smile. Rose, peach, lavender and mint pastel palette.',
   },
   'subject-english': {
     canvas: [512, 512],
@@ -61,16 +82,16 @@ export const SCENES = {
   'note-boy': {
     canvas: [256, 256],
     aspect: '1:1',
-    style: STYLE,
+    style: MECHA_STYLE,
     prompt:
-      'A small cluster of forest treasures: a brass compass, a fern frond, an acorn, a pinecone and one tiny red mushroom. Still life, compact composition, moss green and warm brass palette.',
+      'A small cluster of mecha treasures: one chunky toy robot figurine, a hex bolt, a folded blueprint card, a coiled cable and a tiny wrench. Still life, compact composition, steel blue, graphite and honey orange, rounded toy-like shapes.',
   },
   'note-girl': {
     canvas: [256, 256],
     aspect: '1:1',
-    style: STYLE,
+    style: CUTE_STYLE,
     prompt:
-      'A small cluster of garden treasures: a mint-green watering can, three tulips, a butterfly and a smooth pebble. Still life, compact composition, rose, mint and butter yellow palette.',
+      'A small cluster of cute treasures: a mint watering can, three chubby tulips, a round smiling butterfly and a smooth pebble. Still life, compact composition, rose, mint and butter yellow, chubby rounded shapes.',
   },
   celebrate: {
     canvas: [256, 256],

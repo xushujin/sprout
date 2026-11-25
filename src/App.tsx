@@ -184,7 +184,7 @@ export function App() {
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-note">
-            <span>{theme === 'girl' ? '🌸' : '🌿'}</span>
+            <span>{theme === 'girl' ? '🌸' : '🤖'}</span>
             <p>
               不用一下子很厉害，
               <br />
