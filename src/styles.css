@@ -2102,28 +2102,19 @@ td small {
     position: static;
     border-right: 0;
     border-bottom: 1px solid var(--line);
-    padding: 18px 20px 0;
+    padding: max(6px, env(safe-area-inset-top)) 14px 0;
     display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 16px 0;
+    grid-template-columns: 1fr;
+    gap: 0;
   }
+  /* Phones have no room for a brand bar plus a tab bar. The tab row is the
+     header on every page, so switching tabs never shifts the layout. */
   .sidebar .brand {
-    font-size: 19px;
-  }
-  .sidebar .brand-symbol {
-    width: 37px;
-    height: 37px;
-  }
-  .sidebar .brand small {
-    font-size: 8px;
-    margin-top: 5px;
+    display: none;
   }
   .nav-label,
   .sidebar-note {
     display: none;
-  }
-  .sidebar {
-    grid-template-columns: 1fr;
   }
   .sidebar-bottom {
     display: none;
@@ -2131,21 +2122,18 @@ td small {
   .side-nav {
     grid-column: 1/-1;
     flex-direction: row;
-    gap: 25px;
+    gap: 8px;
+    justify-content: space-between;
   }
   .side-nav button {
-    border-radius: 0;
-    min-height: 48px;
-    padding: 10px 3px;
+    border-radius: 10px;
+    min-height: 44px;
+    padding: 8px 10px;
     justify-content: center;
     width: auto;
     gap: 8px;
     font-size: 12px;
-    border-bottom: 2px solid transparent;
-  }
-  .side-nav button.active {
-    border-bottom-color: #648351;
-    background: transparent;
+    border-bottom: 0;
   }
   .side-nav svg {
     width: 18px;
@@ -3443,6 +3431,7 @@ td small {
   .button,
   .icon-button,
   .sidebar-logout,
+  .mobile-logout,
   .sound-button,
   .side-nav button,
   .book-tabs button,
@@ -3612,17 +3601,6 @@ td small {
   .app-shell.profile-mode .app-footer,
   .app-shell.profile-mode .sync-status {
     display: none;
-  }
-  .app-shell.profile-mode .sidebar {
-    padding: 0 14px;
-    grid-template-columns: 1fr;
-  }
-  .app-shell.profile-mode .sidebar .brand,
-  .app-shell.profile-mode .sidebar-bottom {
-    display: none;
-  }
-  .app-shell.profile-mode .side-nav {
-    grid-column: 1;
   }
   .app-shell.profile-mode .main-content {
     padding: 8px 14px 12px;
@@ -4535,8 +4513,11 @@ html[data-theme] .sound-toggle[aria-pressed='false'] {
   border-color: var(--ws-line);
   color: var(--ws-muted);
 }
-html[data-theme] .side-nav button.active {
-  border-bottom-color: var(--ws-accent);
+/* Tablets keep the underline tabs; phones use a filled pill instead. */
+@media (min-width: 761px) {
+  html[data-theme] .side-nav button.active {
+    border-bottom-color: var(--ws-accent);
+  }
 }
 html[data-theme] button:focus-visible,
 html[data-theme] a:focus-visible {
@@ -5242,8 +5223,8 @@ html[data-theme='girl'] body {
   }
 }
 
-/* Logout lives at the bottom of the page on phones; the sidebar header keeps
-   only the brand so the two never compete for the same corner. */
+/* Logout is a small text action under the footer: easy to find, but
+   deliberately low-emphasis so it never competes with the primary buttons. */
 .mobile-logout {
   display: none;
 }
@@ -5251,20 +5232,23 @@ html[data-theme='girl'] body {
   .mobile-logout {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: calc(100% - 40px);
-    margin: 6px 20px 30px;
-    padding: 14px;
-    border-radius: 14px;
-    border: 1px solid var(--ws-line, #d8e2ec);
-    background: var(--ws-surface, #fff);
+    gap: 6px;
+    width: fit-content;
+    margin: 2px auto 26px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
     color: var(--ws-muted, #5a6b78);
-    font-size: 13px;
-    font-weight: 650;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .mobile-logout svg {
+    width: 14px;
+    height: 14px;
   }
   .mobile-logout:disabled {
-    opacity: 0.5;
+    opacity: 0.45;
   }
 }
 
@@ -5381,26 +5365,26 @@ html[data-theme] .spell-tiles button {
   color: var(--ws-ink-soft);
 }
 
-/* Logout sits at the bottom of the sidebar, with a label so it is not just an
-   unmarked icon next to the name. */
+/* A quiet text link under the profile card: present, but not a big target that
+   invites a mis-tap. */
 .sidebar-logout {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  margin-top: 12px;
-  padding: 10px 12px;
-  border-radius: 11px;
-  border: 1px solid var(--ws-line, #d8e2ec);
-  background: var(--ws-accent-tint, #eff6fb);
+  gap: 7px;
+  width: fit-content;
+  margin-top: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
   color: var(--ws-muted, #5a6b78);
   font-size: 12px;
   font-weight: 600;
 }
 .sidebar-logout:hover:not(:disabled) {
   color: var(--ws-ink, #1e2b36);
+  background: var(--ws-accent-tint, #eff6fb);
 }
 .sidebar-logout:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
 }

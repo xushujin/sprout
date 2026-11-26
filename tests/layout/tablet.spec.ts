@@ -164,25 +164,41 @@ for (const screen of screens) {
     role = 'student';
     await page.setViewportSize(screen.portrait);
     await page.goto('/');
-    await expect(page.getByRole('button', { name: '开始一轮学习' })).toBeEnabled();
+    const startButton = page.getByRole('button', { name: '开始一轮学习' });
+    await expect(startButton).toBeEnabled();
     await shot('garden-portrait');
     await noPageOverflow(page);
-    const picker = page.getByRole('region', { name: '选择学习词库' });
-    const pickerBox = await picker.boundingBox();
-    expect(pickerBox!.width).toBeGreaterThanOrEqual(screen.portrait.width * 0.85);
     await touchTarget(page.getByRole('button', { name: '退出登录' }));
+
+    // Every choice lives in the setup sheet now, so the garden keeps a single
+    // call to action instead of a picker that has to be configured first.
+    await startButton.tap();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    const dialogBox = await dialog.boundingBox();
+    expect(dialogBox!.width).toBeGreaterThanOrEqual(Math.min(720, screen.portrait.width - 32) - 2);
+    const picker = dialog.getByRole('region', { name: '选择学习词库' });
     await touchTarget(picker.getByRole('button', { name: '六年级' }));
     await picker.getByRole('button', { name: '六年级' }).tap();
-    await expect(page.locator('.preview-card h3').first()).toHaveText('apple');
+    await expect(picker.getByRole('button', { name: '六年级' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     await expect(picker.getByRole('tab')).toHaveCount(4);
     await picker.getByRole('tab', { name: '主题包' }).tap();
     await picker.getByRole('button', { name: /^动物朋友/ }).tap();
-    await expect(page.locator('.preview-card h3').first()).toHaveText('cat');
+    await expect(picker.getByRole('button', { name: /^动物朋友/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     await noPageOverflow(page);
     await picker.getByRole('tab', { name: '幼小衔接' }).tap();
     await expect(picker.getByText('先听声音，再认一认')).toBeVisible();
     await picker.getByRole('button', { name: /^数字与数量/ }).tap();
-    await expect(page.locator('.preview-card h3').first()).toHaveText('one');
+    await expect(picker.getByRole('button', { name: /^数字与数量/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     await page.setViewportSize(screen.landscape);
     await shot('preschool-landscape');
     await noPageOverflow(page);
@@ -202,7 +218,7 @@ for (const screen of screens) {
       'aria-pressed',
       'true',
     );
-    await page.getByRole('button', { name: '开始一轮学习' }).tap();
+    await dialog.getByRole('button', { name: '开始这一轮' }).tap();
     await expect(page.locator('.study-card h1')).toHaveText('apple');
     await expect
       .poll(() =>

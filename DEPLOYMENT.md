@@ -365,3 +365,14 @@
 - 发布前校验：`check:art`（8 场景 + 200 词图）、68 项测试、Prettier、`npm run build` 全过。
 - Pages 部署 `b1a5c397`（首轮 `3f977940` 因补主题色被覆盖），预览地址 `https://b1a5c397.wordsprout-5ud.pages.dev`，正式域名 `https://wordsprout.hatim.eu.org` 已引用新指纹 `main-Bg9ZXqiH.js` / `main-BhzFmXtb.css`。仅静态资源，Worker / D1 / KV / Cron 未动。
 - 线上复核（393px，模拟男女账号）：`dataset.theme` 分别为 boy / girl，`theme-color` 分别为 `#12161c` / `#fff6fa`；三页均无 `.topbar`，横向溢出 0；首页 CTA → 弹层 → 自动进入首题（apple / 1-5）链路打通；底部“退出登录”与桌面侧栏按钮均可见；`/art/*?v=3c2ef554` 全部 200、`image/webp`；除既有的 Cloudflare Insights beacon 被 CSP 拦截外无 JS 报错。
+
+2026-11-26 手机端顶部统一为页签栏、退出登录改为文字链（已发布）：
+
+- 顶部统一：手机上不再出现品牌栏，任何页签（我的花园 / 我的形象 / 成长星榜）都只保留一行页签，切换时高度恒为 51px，不再出现“形象页没有、其他页有”的跳动。桌面与平板侧栏仍保留品牌。
+- 页签改胶囊：手机端去掉 2px 底边高亮（原来在暗色下是一条刺眼白线），改为圆角 10px 的浅色胶囊，选中态用各主题的 `--ws-accent-soft` / `--ws-accent-strong`；平板仍用下划线页签。
+- 退出登录改为低干扰文字链：手机端从整宽 14px 内边距大按钮（约 350×50）缩到 88×31 的文字链，居中放在页脚下方；桌面侧栏同样改为用户卡下方的 12px 文字链。触屏设备仍保留 44px 最小点击区（`min-height: 44px` 但背景透明），既不容易误触也不显眼。
+- `profile-mode` 里重复的品牌隐藏 / 侧栏内边距规则已删除，避免手机端两套顶部实现再次分叉。
+- 测试：`tests/layout/tablet.spec.ts` 仍按“首页直接显示词库选择器”的旧流程断言（该流程在上一版已改成弹层），本次一并改成“点开始一轮学习 → 弹层内选词库 → 开始这一轮”，并把已删除的 `.preview-card` 断言换成 `aria-pressed`。Chromium 5 组平板视口全部通过；68 项单元测试、Prettier、`npm run build` 通过。
+- Pages 部署 `25878c6c`，预览地址 `https://25878c6c.wordsprout-5ud.pages.dev`，正式域名已引用新指纹 `main-D9tUHHlE.js` / `main-D7d_UOxq.css`。仅静态资源，Worker / D1 / KV / Cron 未动。
+- 线上复核（393px，触屏模拟）：三个页签顶部均为 51px、无品牌栏、横向溢出 0、JS 报错 0；底部退出登录 88×44（视觉为 12px 文字 + 透明底），点击区达标但不再抢视线。
+- 待办：`tests/e2e/` 下的 audio / catalog / game-sound / learning 四条用例仍按改版前的开局流程编写（点一次即开局、首页常驻词库选择器），尚未迁移到弹层流程，本次未运行。
