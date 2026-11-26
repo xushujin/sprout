@@ -355,3 +355,13 @@
 - 首次部署 `519cb2fa` 已上传新图但被旧缓存遮住，加版本号后重新部署为 `e5770d34`。线上 `/art/hero-boy.webp?v=3c2ef554` 返回 174050B，与 `dist` 一致。
 - 发布前校验：`check:art`（8 场景 + 200 词图，一年级 100/100、二年级 100/100）、68 项测试、Prettier、`npm run build` 全过。
 - 线上复核：393px 模拟男女账号，hero 请求为 `/art/hero-*.webp?v=3c2ef554`、自然尺寸 720×1080、渲染 351×375，横向溢出 0、JS 报错 0；除已知的 Cloudflare Insights beacon 被 CSP 拦截外无失败请求。
+
+2026-11-26 先开局再选科目 / 去掉顶栏 / 男孩暗黑金属（已发布）：
+
+- 开局顺序改为“先点开始，再选条件”：首页只留「开始一轮学习」，科目、年级（或主题包）、难度收进 `RoundSetup` 弹层；确认后把 `{ subject, bookId }` 交给页面自动 `start()`，不用再点一次。学习页与语文 / 数学练习页都复用同一入口。
+- 去掉顶部栏：删除 `<header class="topbar">`，我的花园 / 我的形象 / 成长星榜三个页签不再出现顶部头像与退出图标；退出登录固定到移动端页脚（`.mobile-logout`）与桌面侧栏底部（`.sidebar-logout`），文案统一为「退出登录」。
+- 男孩主题改为暗黑金属：`--ws-bg #12161c`、`--ws-surface #1b212a`、`--ws-line #2d3742`，按钮改拉丝钢渐变（`#f4f8fc → #ccd6e1 → #9dabba`），以蜜橙作点缀；反馈、星榜选中态、hero 光晕、题目水印逐项做暗色适配。女孩主题保持糖果粉不变。
+- 浏览器地址栏颜色跟随皮肤：`applyTheme()` 同步 `<meta name="theme-color">`，男孩 `#12161c`、女孩 `#fff6fa`，避免暗色页面顶一条浅色工具栏。
+- 发布前校验：`check:art`（8 场景 + 200 词图）、68 项测试、Prettier、`npm run build` 全过。
+- Pages 部署 `b1a5c397`（首轮 `3f977940` 因补主题色被覆盖），预览地址 `https://b1a5c397.wordsprout-5ud.pages.dev`，正式域名 `https://wordsprout.hatim.eu.org` 已引用新指纹 `main-Bg9ZXqiH.js` / `main-BhzFmXtb.css`。仅静态资源，Worker / D1 / KV / Cron 未动。
+- 线上复核（393px，模拟男女账号）：`dataset.theme` 分别为 boy / girl，`theme-color` 分别为 `#12161c` / `#fff6fa`；三页均无 `.topbar`，横向溢出 0；首页 CTA → 弹层 → 自动进入首题（apple / 1-5）链路打通；底部“退出登录”与桌面侧栏按钮均可见；`/art/*?v=3c2ef554` 全部 200、`image/webp`；除既有的 Cloudflare Insights beacon 被 CSP 拦截外无 JS 报错。

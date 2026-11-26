@@ -11,10 +11,21 @@ export function themeFor(user?: User | null): ThemeId | null {
   return gender === 'girl' || gender === 'boy' ? gender : null;
 }
 
+const THEME_COLOR: Record<ThemeId, string> = {
+  boy: '#12161c',
+  girl: '#fff6fa',
+};
+const DEFAULT_THEME_COLOR = '#f6f8ef';
+
 export function applyTheme(theme: ThemeId | null) {
   const root = document.documentElement;
   if (theme) root.dataset.theme = theme;
   else delete root.dataset.theme;
+  // The mobile browser chrome has to follow the skin too, otherwise a dark
+  // page sits under a light status bar and looks like a rendering glitch.
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', theme ? THEME_COLOR[theme] : DEFAULT_THEME_COLOR);
 }
 
 export const THEME_COPY: Record<ThemeId, { badge: string; hint: string; note: string }> = {
