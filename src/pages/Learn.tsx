@@ -3,8 +3,8 @@ import type { User } from '../../shared/types';
 import type { Word } from '../data/words';
 import { findBook, loadBookWords, scopeFor } from '../data/catalog';
 import { dialogueOptions, type DialogueEntry } from '../data/dialogues';
-import { BookPicker } from '../components/BookPicker';
 import { SoundControls } from '../components/SoundControls';
+import type { StartRequest } from '../components/RoundSetup';
 import { gameSound, type SoundPreferences } from '../lib/game-sound';
 import {
   completeRound,
@@ -30,7 +30,6 @@ import { Icon } from '../components/Icons';
 import { ArtImage } from '../components/ArtImage';
 import { CELEBRATE_ART, THEME_ART } from '../lib/art';
 import { RoundSprout, Sunflower } from '../components/Sunflower';
-import { SubjectSwitch } from '../components/SubjectSwitch';
 import { SubjectPractice } from './SubjectPractice';
 import type { SubjectId } from '../data/question';
 import { themeCopyFor, themeFor } from '../lib/theme';
@@ -126,9 +125,13 @@ interface LearnProps {
   user: User;
   progress: Progress;
   subject: SubjectId;
-  onSelectSubject: (subject: SubjectId) => void;
   onComplete: () => void;
   roundActive: (active: boolean) => void;
+  /** Opens the round setup sheet; the home page has no pickers of its own. */
+  onOpenSetup: () => void;
+  /** Set when a round was just configured and should start without another tap. */
+  startRequest: StartRequest | null;
+  onStartHandled: () => void;
 }
 
 // Thin dispatcher: English keeps its word engine, while 语文 / 数学 render the
@@ -143,15 +146,22 @@ export function Learn(props: LearnProps) {
   return <EnglishLearn {...props} />;
 }
 
-function EnglishLearn({ user, progress, onSelectSubject, onComplete, roundActive }: LearnProps) {
-  const [bookId, setBookId] = useState(() => findBook(progress.bookId).id);
-  const book = findBook(bookId);
+function EnglishLearn({
+  user,
+  progress,
+  onComplete,
+  roundActive,
+  onOpenSetup,
+  startRequest,
+  onStartHandled,
+}: LearnProps) {
+  const book = findBook(startRequest?.bookId ?? progress.bookId);
+  const bookId = book.id;
   const scope = scopeFor(book);
   const [loadedBook, setLoadedBook] = useState<{ id: string; words: Word[] } | null>(null);
   const [bookError, setBookError] = useState('');
   const [loadAttempt, setLoadAttempt] = useState(0);
   const scopeWords = loadedBook?.id === bookId ? loadedBook.words : [];
-  const loadingBook = scopeWords.length === 0 && !bookError;
   const [round, setRound] = useState<RoundWord[] | null>(null);
   const [roundId, setRoundId] = useState('');
   const [roundWords, setRoundWords] = useState<Word[]>([]);
@@ -183,7 +193,6 @@ function EnglishLearn({ user, progress, onSelectSubject, onComplete, roundActive
   const scopeProgress =
     scope === 'general' ? progress.words : (progress.preschoolWords?.[scope] ?? {});
   const mistakes = scopeWords.filter((word) => scopeProgress[word.id]?.needsReview).length;
-  const bookLearned = scopeWords.filter((word) => scopeProgress[word.id]?.seen).length;
   const learnedIds = new Set(
     Object.entries(progress.words)
       .filter(([, state]) => state.seen)
@@ -219,11 +228,16 @@ function EnglishLearn({ user, progress, onSelectSubject, onComplete, roundActive
     return () => controller.abort();
   }, [bookId, loadAttempt]);
 
-  function changeBook(id: string) {
-    setBookError('');
-    setBookId(id);
-    void selectBook(user.id, id);
-  }
+  // A round configured in the setup sheet starts as soon as its word list is
+  // ready, without asking the child to tap the same button twice.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (!startRequest || autoStarted.current || round) return;
+    if (bookError || scopeWords.length < 5) return;
+    autoStarted.current = true;
+    start();
+    onStartHandled();
+  }, [startRequest, round, bookError, scopeWords.length]);
 
   function changeSound(value: SoundPreferences) {
     setSounds(value);
@@ -419,15 +433,14 @@ function EnglishLearn({ user, progress, onSelectSubject, onComplete, roundActive
           </div>
           <span className="date-tag">慢慢学，天天长</span>
         </div>
-        <SubjectSwitch value="english" onChange={onSelectSubject} />
-        <BookPicker
-          selected={book}
-          onChange={changeBook}
-          learned={bookLearned}
-          loading={loadingBook}
-          error={bookError}
-          retry={() => setLoadAttempt((value) => value + 1)}
-        />
+        {bookError && (
+          <div className="book-load-error" role="status">
+            <span>{bookError}</span>
+            <button className="button small secondary" onClick={() => setLoadAttempt((v) => v + 1)}>
+              重新加载词库
+            </button>
+          </div>
+        )}
         <section className="hero-card">
           <div className="hero-copy">
             <span className="pill pale">🌱 {book.name} · 每轮 5 项</span>
@@ -441,7 +454,7 @@ function EnglishLearn({ user, progress, onSelectSubject, onComplete, roundActive
                 ? `还有 ${mistakes} 个小芽需要照顾，这一轮先来巩固它们。`
                 : '听一听、认一认，和单词交个新朋友。'}
             </p>
-            <button className="button primary" onClick={start} disabled={scopeWords.length < 5}>
+            <button className="button primary" onClick={onOpenSetup}>
               开始一轮学习
               <Icon name="arrow" size={20} />
             </button>

@@ -5,14 +5,18 @@ import {
   emptyProgress,
   lastUsername,
   readProgress,
+  selectBook,
   selectSubject,
+  selectSubjectBook,
   spendPoints,
   storageIsDurable,
 } from './lib/progress';
+import type { SubjectId } from './data/question';
 import { applyTheme, themeFor } from './lib/theme';
 import { syncProgress, type SyncStatus } from './lib/sync';
 import { Icon } from './components/Icons';
 import { UserAvatar } from './components/UserAvatar';
+import { RoundSetup } from './components/RoundSetup';
 import { Login } from './pages/Login';
 import { Learn } from './pages/Learn';
 import { Leaderboard } from './pages/Leaderboard';
@@ -39,6 +43,11 @@ export function App() {
   const [progress, setProgress] = useState(emptyProgress);
   const [sync, setSync] = useState<SyncStatus>('idle');
   const [activeRound, setActiveRound] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [setupBusy, setSetupBusy] = useState(false);
+  const [pendingStart, setPendingStart] = useState<{ subject: SubjectId; bookId: string } | null>(
+    null,
+  );
   const [logoutBusy, setLogoutBusy] = useState(false);
   const [message, setMessage] = useState('');
   const progressRef = useRef(progress);
@@ -125,6 +134,23 @@ export function App() {
     }
   }
 
+  // The picker lives in a sheet opened from the home page; once a child confirms
+  // the round is prepared here and started by the page that renders next.
+  async function beginRound(subject: SubjectId, bookId: string) {
+    if (!user) return;
+    setSetupBusy(true);
+    try {
+      await selectSubject(user.id, subject);
+      if (subject === 'english') await selectBook(user.id, bookId);
+      else await selectSubjectBook(user.id, bookId);
+      refreshProgress();
+      setPendingStart({ subject, bookId });
+      setSetupOpen(false);
+    } finally {
+      setSetupBusy(false);
+    }
+  }
+
   if (booting)
     return (
       <div className="boot-screen">
@@ -199,28 +225,19 @@ export function App() {
               <strong>{user.display_name}</strong>
               <span>{user.role === 'admin' ? '小芽管理员' : '小小探索家'}</span>
             </div>
-            <button
-              className="icon-button profile-logout"
-              onClick={() => void logout()}
-              disabled={logoutBusy || activeRound || sync === 'syncing'}
-              aria-label="退出登录"
-            >
-              <Icon name="logout" size={19} />
-              <span>退出</span>
-            </button>
           </div>
+          <button
+            type="button"
+            className="sidebar-logout"
+            onClick={() => void logout()}
+            disabled={logoutBusy || activeRound || sync === 'syncing'}
+          >
+            <Icon name="logout" size={17} />
+            {logoutBusy ? '正在退出…' : '退出登录'}
+          </button>
         </div>
       </aside>
       <div className="content-shell">
-        <header className="topbar">
-          <span>
-            {user.role === 'admin' ? '每颗小芽，都值得被看见。' : 'HELLO, LITTLE EXPLORER'}
-          </span>
-          <span className="topbar-right">
-            <Icon name="leaf" size={17} />
-            一点一滴，向上生长
-          </span>
-        </header>
         <main className="main-content">
           {message && (
             <p className="form-error" role="alert">
@@ -266,11 +283,11 @@ export function App() {
             <Learn
               user={user}
               progress={progress}
-              subject={progress.subject ?? 'english'}
-              onSelectSubject={(next) => {
-                void selectSubject(user.id, next);
-              }}
+              subject={pendingStart?.subject ?? progress.subject ?? 'english'}
               roundActive={setActiveRound}
+              onOpenSetup={() => setSetupOpen(true)}
+              startRequest={pendingStart}
+              onStartHandled={() => setPendingStart(null)}
               onComplete={() => {
                 refreshProgress();
                 void syncNow();
@@ -300,7 +317,25 @@ export function App() {
             发音来源
           </a>
         </footer>
+        <button
+          type="button"
+          className="mobile-logout"
+          onClick={() => void logout()}
+          disabled={logoutBusy || activeRound || sync === 'syncing'}
+        >
+          <Icon name="logout" size={17} />
+          {logoutBusy ? '正在退出…' : '退出登录'}
+        </button>
       </div>
+      {setupOpen && (
+        <RoundSetup
+          progress={progress}
+          initialSubject={progress.subject ?? 'english'}
+          busy={setupBusy}
+          onClose={() => setSetupOpen(false)}
+          onStart={(subject, bookId) => void beginRound(subject, bookId)}
+        />
+      )}
     </div>
   );
 }

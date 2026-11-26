@@ -466,35 +466,10 @@ input[type='checkbox']:focus-visible {
   font-size: 10px;
   color: #97a08c;
 }
-.profile button {
-  margin-left: auto;
-  width: 30px;
-}
-.profile-logout span {
-  display: none;
-}
 .content-shell {
   margin-left: 242px;
   flex: 1;
   min-width: 0;
-}
-.topbar {
-  height: 83px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 6%;
-  border-bottom: 1px solid var(--line);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: #9aa38e;
-}
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 11px;
-  letter-spacing: 0.05em;
 }
 .main-content {
   max-width: 1180px;
@@ -2087,9 +2062,6 @@ td small {
     padding-left: 4%;
     padding-right: 4%;
   }
-  .topbar {
-    padding: 0 4%;
-  }
   .hero-card {
     padding: 29px;
   }
@@ -2150,34 +2122,11 @@ td small {
   .sidebar-note {
     display: none;
   }
+  .sidebar {
+    grid-template-columns: 1fr;
+  }
   .sidebar-bottom {
-    grid-row: 1;
-    grid-column: 2;
-    padding: 0;
-    margin: 0;
-  }
-  .profile {
-    padding: 0;
-    border: 0;
-    gap: 7px;
-  }
-  .profile > div,
-  .profile-avatar {
     display: none;
-  }
-  .profile button {
-    width: 36px;
-    height: 36px;
-    background: #f1f4e8;
-  }
-  .profile .profile-logout {
-    width: auto;
-    padding: 0 11px;
-    gap: 5px;
-    font-size: 11px;
-  }
-  .profile .profile-logout span {
-    display: inline;
   }
   .side-nav {
     grid-column: 1/-1;
@@ -2207,19 +2156,6 @@ td small {
   }
   .content-shell {
     margin: 0;
-  }
-  .topbar {
-    height: 49px;
-    padding: 0 22px;
-    font-size: 8px;
-    letter-spacing: 0.08em;
-  }
-  .topbar-right {
-    font-size: 9px;
-    gap: 5px;
-  }
-  .topbar-right svg {
-    width: 13px;
   }
   .main-content {
     padding: 16px 20px 24px;
@@ -2696,9 +2632,6 @@ td small {
   .preview-card > span:last-child {
     font-size: 6px;
   }
-  .topbar-right {
-    display: none;
-  }
   .login-plant {
     width: 130px;
     right: -18px;
@@ -3107,12 +3040,6 @@ td small {
   .profile div > span {
     font-size: 11px;
   }
-  .profile button {
-    width: 44px;
-    height: 44px;
-    margin-left: 8px;
-    background: #eff3e6;
-  }
   .side-nav {
     grid-column: 1 / -1;
     flex-direction: row;
@@ -3132,10 +3059,6 @@ td small {
   }
   .content-shell {
     margin-left: 0;
-  }
-  .topbar {
-    height: 54px;
-    padding: 0 32px;
   }
   .main-content {
     padding: 22px 32px 36px;
@@ -3162,10 +3085,6 @@ td small {
   }
   .main-content {
     padding: 24px 32px 36px;
-  }
-  .topbar {
-    height: 64px;
-    padding: 0 32px;
   }
   .profile {
     flex-wrap: wrap;
@@ -3523,7 +3442,7 @@ td small {
   }
   .button,
   .icon-button,
-  .profile button,
+  .sidebar-logout,
   .sound-button,
   .side-nav button,
   .book-tabs button,
@@ -3690,7 +3609,6 @@ td small {
 }
 
 @media (max-width: 760px) {
-  .app-shell.profile-mode .topbar,
   .app-shell.profile-mode .app-footer,
   .app-shell.profile-mode .sync-status {
     display: none;
@@ -4283,35 +4201,35 @@ td small {
 }
 
 html[data-theme='boy'] {
-  --ws-bg: #edf2f7;
-  --ws-surface: #ffffff;
-  --ws-surface-strong: #ffffff;
-  --ws-sidebar: #f6fafc;
-  --ws-line: #d8e2ec;
-  --ws-ink: #1e2b36;
-  --ws-ink-soft: #253440;
-  --ws-muted: #5a6b78;
-  --ws-accent: #2b5b82;
-  --ws-accent-strong: #1e4767;
-  --ws-accent-soft: #e2edf6;
-  --ws-accent-tint: #eff6fb;
-  --ws-accent-line: #cbdcea;
-  --ws-accent-ink: #2a587c;
-  --ws-hero: linear-gradient(118deg, #e1eef7 0%, #e8f1f8 54%, #f9f1e2 100%);
-  --ws-hero-line: #d2e2ef;
-  --ws-hero-ink: #1e4361;
-  --ws-chip: #eaf4fb;
-  --ws-chip-ink: #2b5b82;
-  --ws-option: #f8fbfd;
-  --ws-option-line: #dde8f1;
-  --ws-option-hover: #e9f4fb;
-  --ws-option-hover-line: #8fbcd8;
-  --ws-glow: #d3e7f5;
-  --ws-tone-0: #eaf3f9;
-  --ws-tone-1: #e5eff7;
-  --ws-tone-2: #e6f1f1;
-  --ws-tone-3: #eceff7;
-  --ws-tone-4: #f7f1e6;
+  --ws-bg: #12161c;
+  --ws-surface: #1b212a;
+  --ws-surface-strong: #2a3440;
+  --ws-sidebar: #0e1218;
+  --ws-line: #2d3742;
+  --ws-ink: #e9eef4;
+  --ws-ink-soft: #f4f8fc;
+  --ws-muted: #9aa8b6;
+  --ws-accent: #cfd9e4;
+  --ws-accent-strong: #f0f5fa;
+  --ws-accent-soft: #2b3743;
+  --ws-accent-tint: #212a34;
+  --ws-accent-line: #3b4856;
+  --ws-accent-ink: #d7e2ec;
+  --ws-hero: linear-gradient(118deg, #242c37 0%, #1a212a 52%, #2e2318 100%);
+  --ws-hero-line: #3a4552;
+  --ws-hero-ink: #f2f6fa;
+  --ws-chip: #26313c;
+  --ws-chip-ink: #dde7f1;
+  --ws-option: #1a2129;
+  --ws-option-line: #313c48;
+  --ws-option-hover: #242e39;
+  --ws-option-hover-line: #5a6c7e;
+  --ws-glow: rgba(120, 160, 205, 0.16);
+  --ws-tone-0: #1d2530;
+  --ws-tone-1: #1b232e;
+  --ws-tone-2: #1a2626;
+  --ws-tone-3: #202634;
+  --ws-tone-4: #262019;
 }
 
 html[data-theme='girl'] {
@@ -4383,7 +4301,6 @@ html[data-theme] .nav-dot {
 html[data-theme] .sidebar-note {
   background: var(--ws-accent-tint);
 }
-html[data-theme] .topbar,
 html[data-theme] .sync-status,
 html[data-theme] .date-tag {
   color: var(--ws-muted);
@@ -4435,9 +4352,6 @@ html[data-theme] .secondary {
   background: var(--ws-accent-tint);
   border-color: var(--ws-accent-line);
   color: var(--ws-accent-strong);
-}
-html[data-theme] .profile button {
-  background: var(--ws-accent-tint);
 }
 html[data-theme] .pill.pale {
   background: var(--ws-chip);
@@ -4995,13 +4909,15 @@ html[data-theme='boy'] .hero-float--3 {
 
 html[data-theme='boy'] body {
   background-image:
-    radial-gradient(circle at 6% 0%, var(--ws-glow) 0%, transparent 34%),
-    radial-gradient(circle at 100% 100%, var(--ws-glow) 0%, transparent 30%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Cg fill='none' stroke='%232b5b82' stroke-opacity='.062' stroke-width='1.2' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-10 84h96v78h104v70h140'/%3E%3Cpath d='M-10 206h58v-70h86'/%3E%3Cpath d='M236-10v54h94'/%3E%3Cpath d='M150 320v-52h-58'/%3E%3C/g%3E%3Cg fill='%232b5b82' fill-opacity='.07'%3E%3Ccircle cx='86' cy='84' r='2.4'/%3E%3Ccircle cx='190' cy='162' r='2.4'/%3E%3Ccircle cx='236' cy='232' r='2.4'/%3E%3C/g%3E%3Cg fill='%23e08a3c' fill-opacity='.075'%3E%3Crect x='300' y='158' width='7' height='7' rx='1.5'/%3E%3Crect x='12' y='188' width='6' height='6' rx='1.5'/%3E%3C/g%3E%3C/svg%3E");
+    radial-gradient(circle at 8% -8%, rgba(126, 166, 205, 0.2) 0%, transparent 46%),
+    radial-gradient(circle at 100% 108%, rgba(224, 138, 60, 0.16) 0%, transparent 44%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Cg fill='none' stroke='%23a9bccd' stroke-opacity='.075' stroke-width='1.2' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-10 84h96v78h104v70h140'/%3E%3Cpath d='M-10 206h58v-70h86'/%3E%3Cpath d='M236-10v54h94'/%3E%3Cpath d='M150 320v-52h-58'/%3E%3C/g%3E%3Cg fill='%23a9bccd' fill-opacity='.09'%3E%3Ccircle cx='86' cy='84' r='2.4'/%3E%3Ccircle cx='190' cy='162' r='2.4'/%3E%3Ccircle cx='236' cy='232' r='2.4'/%3E%3C/g%3E%3Cg fill='%23e08a3c' fill-opacity='.12'%3E%3Crect x='300' y='158' width='7' height='7' rx='1.5'/%3E%3Crect x='12' y='188' width='6' height='6' rx='1.5'/%3E%3C/g%3E%3C/svg%3E"),
+    repeating-linear-gradient(112deg, rgba(255, 255, 255, 0.024) 0 1px, transparent 1px 4px);
   background-size:
     auto,
     auto,
-    320px 320px;
+    320px 320px,
+    auto;
 }
 html[data-theme='girl'] body {
   background-image:
@@ -5179,4 +5095,312 @@ html[data-theme='girl'] body {
 .question-card > *:not(.question-watermark) {
   position: relative;
   z-index: 1;
+}
+
+/* ---------------------------------------------------------------------------
+ * Round setup sheet
+ * The home page only has one call to action; subject, grade / theme / level
+ * are picked here and the round starts straight from the sheet.
+ * ------------------------------------------------------------------------ */
+.setup-dialog {
+  width: min(720px, calc(100% - 32px));
+  max-height: min(88dvh, 940px);
+  padding: 0;
+  border: 1px solid var(--ws-line, #d8e2ec);
+  border-radius: 24px;
+  background: var(--ws-surface, #fff);
+  color: var(--ws-ink, #1e2b36);
+  box-shadow: 0 30px 90px rgba(9, 15, 22, 0.34);
+  overflow: hidden;
+}
+.setup-dialog::backdrop {
+  background: rgba(11, 17, 24, 0.56);
+  backdrop-filter: blur(3px);
+}
+.setup-sheet {
+  display: flex;
+  flex-direction: column;
+  max-height: min(88dvh, 940px);
+}
+.setup-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 26px 4px;
+}
+.setup-head h2 {
+  margin-top: 6px;
+  font-size: 23px;
+  letter-spacing: -0.3px;
+  color: var(--ws-ink-soft, #23303c);
+}
+.setup-close {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--ws-line, #d8e2ec);
+  background: var(--ws-surface-strong, #fff);
+  color: var(--ws-muted, #5a6b78);
+}
+.setup-close:hover {
+  color: var(--ws-ink, #1e2b36);
+}
+.setup-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 26px 10px;
+}
+.setup-body .subject-switch,
+.setup-body .book-picker {
+  margin-bottom: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.setup-sheet .subject-switch-copy {
+  display: none;
+}
+.setup-sheet .subject-switch {
+  display: block;
+  margin: 14px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.setup-body .subject-tabs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.setup-body .book-tabs {
+  margin-top: 12px;
+}
+.setup-body .book-selection-summary {
+  margin-top: 12px;
+}
+.setup-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 26px 18px;
+  border-top: 1px solid var(--ws-line, #d8e2ec);
+  background: var(--ws-surface, #fff);
+}
+.setup-actions > div {
+  display: flex;
+  gap: 10px;
+}
+.setup-actions .button {
+  white-space: nowrap;
+}
+.setup-hint {
+  font-size: 11px;
+  color: var(--ws-muted, #5a6b78);
+}
+@media (max-width: 640px) {
+  .setup-dialog {
+    width: 100%;
+    max-width: none;
+    max-height: 92dvh;
+    margin: auto 0 0;
+    border-radius: 22px 22px 0 0;
+    border-bottom: 0;
+  }
+  .setup-sheet {
+    max-height: 92dvh;
+  }
+  .setup-head {
+    padding: 18px 18px 2px;
+  }
+  .setup-head h2 {
+    font-size: 20px;
+  }
+  .setup-body {
+    padding: 0 14px 8px;
+  }
+  .setup-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px 16px 16px;
+  }
+  .setup-actions > div {
+    width: 100%;
+  }
+  .setup-actions .button {
+    flex: 1;
+  }
+  .setup-hint {
+    order: 2;
+    text-align: center;
+  }
+}
+
+/* Logout lives at the bottom of the page on phones; the sidebar header keeps
+   only the brand so the two never compete for the same corner. */
+.mobile-logout {
+  display: none;
+}
+@media (max-width: 760px) {
+  .mobile-logout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: calc(100% - 40px);
+    margin: 6px 20px 30px;
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid var(--ws-line, #d8e2ec);
+    background: var(--ws-surface, #fff);
+    color: var(--ws-muted, #5a6b78);
+    font-size: 13px;
+    font-weight: 650;
+  }
+  .mobile-logout:disabled {
+    opacity: 0.5;
+  }
+}
+
+/* Boy theme: brushed-steel highlights over the dark gunmetal base. */
+html[data-theme='boy'] .primary {
+  background: linear-gradient(140deg, #f4f8fc 0%, #ccd6e1 46%, #9dabba 100%);
+  color: #0f151b;
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+html[data-theme='boy'] .primary:hover:not(:disabled) {
+  background: linear-gradient(140deg, #ffffff 0%, #dbe4ee 46%, #b2c0cd 100%);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+html[data-theme='boy'] .primary:disabled {
+  background: #2b343f;
+  color: #7d8a97;
+  box-shadow: none;
+}
+html[data-theme='boy'] .sidebar .brand-symbol {
+  background: linear-gradient(140deg, #eef4fa 0%, #b6c3d0 100%);
+  color: #10161c;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 6px 14px rgba(0, 0, 0, 0.5);
+}
+html[data-theme='boy'] .brand small,
+html[data-theme='boy'] .app-footer {
+  color: #7f8d9b;
+}
+html[data-theme='boy'] .sync-status.has-pending {
+  color: #d9a45c;
+}
+html[data-theme='boy'] .leave-dialog {
+  background: var(--ws-surface);
+  border-color: var(--ws-line);
+  color: var(--ws-ink);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+}
+html[data-theme='boy'] .leave-dialog p {
+  color: var(--ws-muted);
+}
+html[data-theme='boy'] .leave-dialog::backdrop {
+  background: rgba(6, 10, 14, 0.72);
+}
+html[data-theme='boy'] .stat-icon.amber {
+  background: #33291c;
+  color: #e8b874;
+}
+html[data-theme='boy'] .stat-icon.lilac {
+  background: #262a3a;
+  color: #b9c2e0;
+}
+
+/* The light halo and pale watermarks were tuned for a light page; on the dark
+   theme they read as flat grey discs, so tone them down to a soft rim light. */
+html[data-theme='boy'] .hero-halo {
+  width: min(96%, 300px);
+  background:
+    radial-gradient(
+      circle at 50% 44%,
+      rgba(198, 219, 240, 0.11) 0%,
+      rgba(198, 219, 240, 0.05) 46%,
+      transparent 72%
+    ),
+    radial-gradient(
+      circle at 50% 56%,
+      rgba(224, 138, 60, 0.1) 0%,
+      rgba(224, 138, 60, 0.04) 52%,
+      transparent 78%
+    );
+}
+html[data-theme='boy'] .question-watermark {
+  opacity: 0.05;
+}
+html[data-theme='boy'] .subject-picker-watermark {
+  opacity: 0.05;
+}
+html[data-theme='boy'] .subject-preview-watermark {
+  opacity: 0.07;
+}
+
+/* Amber "try again" states need their own surface on the dark theme; the
+   shared theme block only knows one accent family. */
+html[data-theme='boy'] .feedback.retry {
+  background: #33291c;
+  color: #e8b874;
+}
+html[data-theme='boy'] .word-retry {
+  background: #33291c;
+  color: #e8b874;
+}
+html[data-theme='girl'] .feedback.retry {
+  background: #fdf0dc;
+  color: #a9743a;
+}
+html[data-theme='girl'] .word-retry {
+  background: #fdf0dc;
+  color: #a9743a;
+}
+
+/* Surfaces that were hard-coded white in the base sheet. */
+html[data-theme] .leaderboard-tabs button.active {
+  background: var(--ws-surface-strong);
+  color: var(--ws-accent-strong);
+  box-shadow: none;
+}
+html[data-theme] .spell-tiles button {
+  background: var(--ws-surface-strong);
+  border-color: var(--ws-line);
+  color: var(--ws-ink-soft);
+}
+
+/* Logout sits at the bottom of the sidebar, with a label so it is not just an
+   unmarked icon next to the name. */
+.sidebar-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1px solid var(--ws-line, #d8e2ec);
+  background: var(--ws-accent-tint, #eff6fb);
+  color: var(--ws-muted, #5a6b78);
+  font-size: 12px;
+  font-weight: 600;
+}
+.sidebar-logout:hover:not(:disabled) {
+  color: var(--ws-ink, #1e2b36);
+}
+.sidebar-logout:disabled {
+  opacity: 0.5;
 }

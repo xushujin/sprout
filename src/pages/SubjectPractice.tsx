@@ -1,20 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { User } from '../../shared/types';
-import {
-  findSubjectBook,
-  subjectBooks,
-  SUBJECT_META,
-  type LearningSubject,
-  type SubjectId,
-} from '../data/question';
-import { chineseQuestions, CHINESE_TOTAL } from '../data/chinese';
+import { findSubjectBook, SUBJECT_META, type LearningSubject } from '../data/question';
+import { chineseQuestions } from '../data/chinese';
 import { MATH_TOPIC_COUNT } from '../lib/math-quiz';
 import {
   completeSubjectRound,
   makeSubjectRound,
   readProgress,
   saveSoundPreferences,
-  selectSubjectBook,
   type Progress,
   type SubjectRoundItem,
 } from '../lib/progress';
@@ -24,8 +17,8 @@ import { themeCopyFor, themeFor } from '../lib/theme';
 import { Icon } from '../components/Icons';
 import { ArtImage } from '../components/ArtImage';
 import { CELEBRATE_ART, SUBJECT_ART, SUBJECT_ART_FALLBACK, THEME_ART } from '../lib/art';
-import { SubjectSwitch } from '../components/SubjectSwitch';
 import { SoundControls } from '../components/SoundControls';
+import type { StartRequest } from '../components/RoundSetup';
 import { RoundSprout, Sunflower } from '../components/Sunflower';
 
 const SUBJECT_SECONDS = 30;
@@ -34,25 +27,25 @@ export function SubjectPractice({
   user,
   progress,
   subject,
-  onSelectSubject,
   onComplete,
   roundActive,
+  onOpenSetup,
+  startRequest,
+  onStartHandled,
 }: {
   user: User;
   progress: Progress;
   subject: LearningSubject;
-  onSelectSubject: (subject: SubjectId) => void;
   onComplete: () => void;
   roundActive: (active: boolean) => void;
+  onOpenSetup: () => void;
+  startRequest: StartRequest | null;
+  onStartHandled: () => void;
 }) {
   const copy = themeCopyFor(user);
   const theme = themeFor(user) ?? 'boy';
   const meta = SUBJECT_META[subject];
-  const [bookId, setBookId] = useState(() => findSubjectBook(progress.subjectBookId, subject).id);
-  useEffect(() => {
-    setBookId(findSubjectBook(progress.subjectBookId, subject).id);
-  }, [progress.subjectBookId, subject]);
-  const book = findSubjectBook(bookId, subject);
+  const book = findSubjectBook(startRequest?.bookId ?? progress.subjectBookId, subject);
   const isMath = book.subject === 'math';
   const [items, setItems] = useState<SubjectRoundItem[] | null>(null);
   const [roundId, setRoundId] = useState('');
@@ -81,6 +74,17 @@ export function SubjectPractice({
   const growth = growthFor(progress.points);
   const preview = useMemo(() => makeSubjectRound(progress, book), [progress, book.id]);
   const current = items?.[index];
+
+  // A round configured in the setup sheet starts by itself once the question
+  // list for the chosen grade is ready.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (!startRequest || autoStarted.current || items) return;
+    if (preview.length < 5) return;
+    autoStarted.current = true;
+    start();
+    onStartHandled();
+  }, [startRequest, items, preview.length]);
 
   useEffect(() => {
     if (leaving) leaveDialog.current?.showModal();
@@ -118,10 +122,6 @@ export function SubjectPractice({
     return () => window.clearInterval(interval);
   }, [items, phase, index]);
 
-  function changeBook(id: string) {
-    setBookId(id);
-    void selectSubjectBook(user.id, id);
-  }
   function changeSound(value: SoundPreferences) {
     setSounds(value);
     gameSound.setPreferences(value);
@@ -236,60 +236,6 @@ export function SubjectPractice({
           `你好，${user.display_name}`,
           isMath ? '今天也来算一算，想一想。' : '今天也来认几个新朋友。',
         )}
-        <SubjectSwitch value={subject} onChange={onSelectSubject} />
-        <section className="book-picker subject-picker" aria-label="选择年级">
-          <img
-            className="subject-picker-watermark"
-            src={SUBJECT_ART[subject]}
-            alt=""
-            aria-hidden="true"
-            loading="lazy"
-          />
-          <div className="book-picker-heading">
-            <div>
-              <span className="eyebrow">CHOOSE A LEVEL</span>
-              <h2>选一个年级，开始今天的练习</h2>
-            </div>
-            <ArtImage
-              src={SUBJECT_ART[subject]}
-              alt=""
-              className="subject-picker-art"
-              fallback={SUBJECT_ART_FALLBACK[subject]}
-              eager
-            />
-          </div>
-          <div className="grade-options subject-grades">
-            {subjectBooks(subject).map((item) => (
-              <button
-                key={item.id}
-                className={book.id === item.id ? 'selected' : ''}
-                aria-pressed={book.id === item.id}
-                onClick={() => changeBook(item.id)}
-              >
-                <strong>{item.short}</strong>
-                <span>
-                  {item.subject === 'math'
-                    ? `${MATH_TOPIC_COUNT[item.grade]} 类题型`
-                    : `${chineseQuestions(item.grade).length} 道题`}
-                </span>
-              </button>
-            ))}
-          </div>
-          <p className="book-note">
-            {isMath
-              ? `数学按${book.short}范围随机出题：${book.description}。同一类题每次都会换新数字，做完一轮再来一轮也不会重复。`
-              : `语文按${book.short}范围混合出题：${book.description}。${CHINESE_TOTAL} 道题全部由 WordSprout 自主整编，答错的题会回到「再练一次」。`}
-          </p>
-          <div className="book-selection-summary">
-            <strong>
-              <Icon name="check" size={16} />
-              {book.name}
-            </strong>
-            <span>
-              已练 {learned} / {total} {isMath ? '类题型' : '道题'}
-            </span>
-          </div>
-        </section>
         <section className="hero-card subject-hero">
           <div className="hero-copy">
             <span className="pill pale">
@@ -311,8 +257,8 @@ export function SubjectPractice({
               )}
             </h2>
             <p>{mistakes ? `还有 ${mistakes} 道题想再练一次，这一轮先来照顾它们。` : copy.hint}</p>
-            <button className="button primary" onClick={start} disabled={preview.length < 5}>
-              开始 5 道题
+            <button className="button primary" onClick={onOpenSetup}>
+              开始一轮学习
               <Icon name="arrow" size={20} />
             </button>
             <div

@@ -17,6 +17,7 @@ export function BookPicker({
   loading,
   error,
   retry,
+  compact = false,
 }: {
   selected: Book;
   onChange: (id: string) => void;
@@ -24,6 +25,8 @@ export function BookPicker({
   loading: boolean;
   error: string;
   retry: () => void;
+  /** Inside the round setup dialog the surrounding sheet already has a title. */
+  compact?: boolean;
 }) {
   function switchMode(mode: BookMode) {
     if (mode === selected.mode) return;
@@ -31,13 +34,15 @@ export function BookPicker({
   }
   return (
     <section className="book-picker" aria-label="选择学习词库">
-      <div className="book-picker-heading">
-        <div>
-          <span className="eyebrow">PICK YOUR LITTLE ADVENTURE</span>
-          <h2>今天，想种哪一片小花园？</h2>
+      {!compact && (
+        <div className="book-picker-heading">
+          <div>
+            <span className="eyebrow">PICK YOUR LITTLE ADVENTURE</span>
+            <h2>今天，想种哪一片小花园？</h2>
+          </div>
+          <Icon name="book" size={26} />
         </div>
-        <Icon name="book" size={26} />
-      </div>
+      )}
       <div className="book-tabs" role="tablist" aria-label="词库分类">
         {tabs.map(({ mode, title }) => (
           <button
@@ -179,24 +184,28 @@ export function BookPicker({
           </>
         )}
       </div>
-      <p className="book-note">
-        <a href="/vocabulary/credits.html" target="_blank" rel="noreferrer">
-          词库来源与使用说明
-        </a>
-      </p>
-      <div className="book-selection-summary">
-        <strong>
-          <Icon name="check" size={16} />
-          {selected.name}
-        </strong>
-        <span>
-          {loading
-            ? '正在打开词库…'
-            : error
-              ? '等待加载'
-              : `已认识 ${learned} / ${selected.count} 项`}
-        </span>
-      </div>
+      {!compact && (
+        <>
+          <p className="book-note">
+            <a href="/vocabulary/credits.html" target="_blank" rel="noreferrer">
+              词库来源与使用说明
+            </a>
+          </p>
+          <div className="book-selection-summary">
+            <strong>
+              <Icon name="check" size={16} />
+              {selected.name}
+            </strong>
+            <span>
+              {loading
+                ? '正在打开词库…'
+                : error
+                  ? '等待加载'
+                  : `已认识 ${learned} / ${selected.count} 项`}
+            </span>
+          </div>
+        </>
+      )}
       {error && (
         <div className="book-load-error" role="status">
           <span>{error}</span>
