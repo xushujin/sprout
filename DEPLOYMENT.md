@@ -376,3 +376,10 @@
 - Pages 部署 `25878c6c`，预览地址 `https://25878c6c.wordsprout-5ud.pages.dev`，正式域名已引用新指纹 `main-D9tUHHlE.js` / `main-D7d_UOxq.css`。仅静态资源，Worker / D1 / KV / Cron 未动。
 - 线上复核（393px，触屏模拟）：三个页签顶部均为 51px、无品牌栏、横向溢出 0、JS 报错 0；底部退出登录 88×44（视觉为 12px 文字 + 透明底），点击区达标但不再抢视线。
 - 待办：`tests/e2e/` 下的 audio / catalog / game-sound / learning 四条用例仍按改版前的开局流程编写（点一次即开局、首页常驻词库选择器），尚未迁移到弹层流程，本次未运行。
+
+2026-11-26 底部页脚在三页统一（已发布）：
+
+- 之前手机端的「我的形象」隐藏了页脚，底部只有一条退出登录，与其他页签不一致；现在页脚 + 退出登录在所有页签都出现，滚动到底时三页的位置完全相同（393px 实测 footer y=714、退出登录 y=769）。
+- 只保留一处差异：形象页仍不显示顶部的同步提示（它描述的是答题同步，与捏形象无关），避免把编辑器再往下推一行。
+- 校验：Prettier、`npm run build` 通过；线上 393px 触屏三页横向溢出 0、JS 报错 0。
+- Pages 部署 `8a02d672`，预览地址 `https://8a02d672.wordsprout-5ud.pages.dev`，正式域名已引用 `main-BwCQIy1u.js` / `main-BZyZuVjv.css`。

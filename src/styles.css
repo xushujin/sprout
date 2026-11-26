@@ -3598,7 +3598,9 @@ td small {
 }
 
 @media (max-width: 760px) {
-  .app-shell.profile-mode .app-footer,
+  /* The footer and the logout link stay in the same place on every tab, so the
+     avatar editor keeps the shared bottom instead of dropping it. Only the sync
+     notice is skipped: it talks about rounds, not about editing an avatar. */
   .app-shell.profile-mode .sync-status {
     display: none;
   }
